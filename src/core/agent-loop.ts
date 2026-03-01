@@ -97,7 +97,7 @@ export class AgentLoop {
     )
 
     let statusMessage: SentMessage | null = null
-    const toolUpdates: string[] = []
+    const toolUpdates: Array<{ id: string; label: string }> = []
 
     const publishProgress = async (update: AgentTurnUpdate): Promise<void> => {
       if (
@@ -132,17 +132,20 @@ export class AgentLoop {
 
       if (!this.channelManager) return
 
+      const toolId = update.toolUseId ?? update.toolName ?? 'tool'
+      const toolLabel = update.toolName ?? 'tool'
+
       if (update.kind === 'tool_call_started') {
-        toolUpdates.push(`🔧 ${update.toolName ?? 'tool'}`)
+        toolUpdates.push({ id: toolId, label: `🔧 ${toolLabel}` })
       } else if (update.kind === 'tool_call_finished') {
-        const idx = toolUpdates.findIndex((t) => t === `🔧 ${update.toolName ?? 'tool'}`)
-        if (idx !== -1) toolUpdates[idx] = `✅ ${update.toolName ?? 'tool'}`
+        const entry = toolUpdates.find((t) => t.id === toolId)
+        if (entry) entry.label = `✅ ${toolLabel}`
       } else if (update.kind === 'tool_call_failed') {
-        const idx = toolUpdates.findIndex((t) => t === `🔧 ${update.toolName ?? 'tool'}`)
-        if (idx !== -1) toolUpdates[idx] = `❌ ${update.toolName ?? 'tool'}`
+        const entry = toolUpdates.find((t) => t.id === toolId)
+        if (entry) entry.label = `❌ ${toolLabel}`
       }
 
-      const statusText = toolUpdates.join('\n')
+      const statusText = toolUpdates.map((t) => t.label).join('\n')
       try {
         if (statusMessage) {
           await this.channelManager.editMessage(statusMessage, statusText)
