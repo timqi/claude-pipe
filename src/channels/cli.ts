@@ -87,6 +87,11 @@ export class CliChannel implements Channel {
     this.io.output.write(`bot (edit)> ${newContent}\n`)
   }
 
+  async sendMessageDraft(_chatId: string, text: string): Promise<SentMessage | void> {
+    if (!this.config.channels.cli?.enabled) return
+    this.io.output.write(`bot (draft)> ${text}\n`)
+  }
+
   private async handleLine(raw: string): Promise<void> {
     if (!this.config.channels.cli?.enabled) return
 

@@ -66,6 +66,16 @@ export class ChannelManager {
     await channel.editMessage(sent, newContent)
   }
 
+  /** Sends a streaming draft message through the appropriate channel adapter. */
+  async sendDraftMessage(message: OutboundMessage): Promise<SentMessage | void> {
+    const channel = this.channels.find((ch) => ch.name === message.channel)
+    if (!channel) {
+      this.logger.warn('channel.unknown', { channel: message.channel })
+      return
+    }
+    return channel.sendMessageDraft(message.chatId, message.content)
+  }
+
   private async dispatchOutbound(): Promise<void> {
     while (this.dispatcherRunning) {
       const msg = await this.bus.consumeOutbound()

@@ -168,6 +168,12 @@ export class ClaudeClient implements ModelClient {
             type: 'assistant_text',
             text
           })
+          await this.publishUpdate(context, {
+            kind: 'text_streaming',
+            conversationKey,
+            message: 'Streaming response...',
+            text
+          })
         }
 
         for (const block of content.filter((entry: unknown) => isToolUseBlock(entry))) {

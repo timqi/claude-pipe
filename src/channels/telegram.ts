@@ -153,6 +153,47 @@ export class TelegramChannel implements Channel {
     }
   }
 
+  /** Sends or updates a streaming draft message using Telegram's sendMessageDraft API. */
+  async sendMessageDraft(chatId: string, text: string): Promise<SentMessage | void> {
+    if (!this.config.channels.telegram.enabled) return
+
+    const token = this.config.channels.telegram.token
+    const url = `https://api.telegram.org/bot${token}/sendMessageDraft`
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: Number(chatId),
+          text
+        })
+      })
+
+      if (!response.ok) {
+        const body = await response.text()
+        throw new Error(`telegram sendMessageDraft failed (${response.status}): ${body}`)
+      }
+
+      try {
+        const json = (await response.json()) as {
+          ok: boolean
+          result?: { message_id?: number }
+        }
+        if (json.ok && json.result?.message_id != null) {
+          return { channel: 'telegram', chatId, messageId: String(json.result.message_id) }
+        }
+      } catch {
+        // Draft sent but couldn't parse response for message ID
+      }
+    } catch (error) {
+      this.logger.error('channel.telegram.draft_failed', {
+        chatId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
+  }
+
   /** Edits a previously sent Telegram message. */
   async editMessage(sent: SentMessage, newContent: string): Promise<void> {
     if (!this.config.channels.telegram.enabled) return

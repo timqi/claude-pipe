@@ -227,6 +227,122 @@ describe('AgentLoop', () => {
     await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])
   })
 
+  it('sends streaming text updates as draft messages and finalises with editMessage', async () => {
+    const bus = new MessageBus()
+    const claude = {
+      runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
+        await context.onUpdate({
+          kind: 'text_streaming',
+          conversationKey: 'telegram:42',
+          message: 'Streaming response...',
+          text: 'partial answer'
+        })
+        return 'full answer'
+      }),
+      startNewSession: vi.fn(async () => undefined),
+      closeAll: vi.fn()
+    }
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+
+    const draftMessage = { channel: 'telegram' as const, chatId: '42', messageId: '88' }
+    const channelManager = {
+      sendDirect: vi.fn(async () => undefined),
+      sendDraftMessage: vi.fn(async () => draftMessage),
+      editMessage: vi.fn(async () => undefined)
+    }
+
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    loop.setChannelManager(channelManager as any)
+
+    const run = loop.start()
+    await bus.publishInbound({
+      channel: 'telegram',
+      senderId: 'u1',
+      chatId: '42',
+      content: 'hello',
+      timestamp: new Date().toISOString()
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    // Should have sent partial text as a draft
+    expect(channelManager.sendDraftMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: 'telegram',
+        chatId: '42',
+        content: 'partial answer'
+      })
+    )
+
+    // Should have finalised the draft with the full answer
+    expect(channelManager.editMessage).toHaveBeenCalledWith(draftMessage, 'full answer')
+
+    // No outbound via bus when channel manager handles the edit
+    const outcome = await Promise.race([
+      bus.consumeOutbound().then(() => 'published'),
+      new Promise((resolve) => setTimeout(() => resolve('timeout'), 50))
+    ])
+    expect(outcome).toBe('timeout')
+
+    loop.stop()
+    await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])
+  })
+
+  it('uses streaming draft instead of status message when text streaming follows tool calls', async () => {
+    const bus = new MessageBus()
+    const claude = {
+      runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
+        await context.onUpdate({
+          kind: 'tool_call_started',
+          conversationKey: 'telegram:42',
+          message: 'Using tool: Read',
+          toolName: 'Read',
+          toolUseId: 'tool-1'
+        })
+        await context.onUpdate({
+          kind: 'text_streaming',
+          conversationKey: 'telegram:42',
+          message: 'Streaming response...',
+          text: 'streaming content'
+        })
+        return 'final content'
+      }),
+      startNewSession: vi.fn(async () => undefined),
+      closeAll: vi.fn()
+    }
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+
+    const toolMessage = { channel: 'telegram' as const, chatId: '42', messageId: '55' }
+    const channelManager = {
+      sendDirect: vi.fn(async () => toolMessage),
+      sendDraftMessage: vi.fn(async () => undefined),
+      editMessage: vi.fn(async () => undefined)
+    }
+
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    loop.setChannelManager(channelManager as any)
+
+    const run = loop.start()
+    await bus.publishInbound({
+      channel: 'telegram',
+      senderId: 'u1',
+      chatId: '42',
+      content: 'hello',
+      timestamp: new Date().toISOString()
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    // text_streaming should update the existing status message (not send a new draft)
+    expect(channelManager.sendDraftMessage).not.toHaveBeenCalled()
+    expect(channelManager.editMessage).toHaveBeenCalledWith(toolMessage, 'streaming content')
+    // Final answer should also edit the same message
+    expect(channelManager.editMessage).toHaveBeenCalledWith(toolMessage, 'final content')
+
+    loop.stop()
+    await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])
+  })
+
   it('falls back to bus when channel manager is attached but sendDirect returns void', async () => {
     const bus = new MessageBus()
     const claude = {
@@ -247,6 +363,7 @@ describe('AgentLoop', () => {
 
     const channelManager = {
       sendDirect: vi.fn(async () => undefined),
+      sendDraftMessage: vi.fn(async () => undefined),
       editMessage: vi.fn(async () => undefined)
     }
 

@@ -176,6 +176,11 @@ export class DiscordChannel implements Channel {
     }
   }
 
+  /** Discord does not support message drafts; this is a no-op. */
+  async sendMessageDraft(_chatId: string, _text: string): Promise<SentMessage | void> {
+    // Discord has no equivalent streaming draft API
+  }
+
   private async onMessage(message: Message): Promise<void> {
     if (message.author.bot) return
 

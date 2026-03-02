@@ -97,9 +97,34 @@ export class AgentLoop {
     )
 
     let statusMessage: SentMessage | null = null
+    let streamMessage: SentMessage | null = null
     const toolUpdates: Array<{ id: string; label: string }> = []
 
     const publishProgress = async (update: AgentTurnUpdate): Promise<void> => {
+      if (update.kind === 'text_streaming') {
+        if (!this.channelManager || !update.text) return
+
+        try {
+          if (streamMessage) {
+            await this.channelManager.editMessage(streamMessage, update.text)
+          } else if (statusMessage) {
+            // Replace tool status with streaming text
+            await this.channelManager.editMessage(statusMessage, update.text)
+            streamMessage = statusMessage
+          } else {
+            const sent = await this.channelManager.sendDraftMessage({
+              channel: inbound.channel,
+              chatId: inbound.chatId,
+              content: update.text
+            })
+            if (sent) streamMessage = sent
+          }
+        } catch {
+          // Non-critical — streaming draft update failed
+        }
+        return
+      }
+
       if (
         update.kind !== 'tool_call_started' &&
         update.kind !== 'tool_call_finished' &&
@@ -145,6 +170,9 @@ export class AgentLoop {
         if (entry) entry.label = `❌ ${toolLabel}`
       }
 
+      // Don't overwrite a streaming text draft with tool status
+      if (streamMessage) return
+
       const statusText = toolUpdates.map((t) => t.label).join('\n')
       try {
         if (statusMessage) {
@@ -169,10 +197,11 @@ export class AgentLoop {
       onUpdate: publishProgress
     })
 
-    // Replace the status message with the final response when possible
-    if (statusMessage && this.channelManager) {
+    // Replace the streaming draft or status message with the final response when possible
+    const trackedMessage = streamMessage ?? statusMessage
+    if (trackedMessage && this.channelManager) {
       try {
-        await this.channelManager.editMessage(statusMessage, content)
+        await this.channelManager.editMessage(trackedMessage, content)
       } catch {
         // Fall through to normal outbound publish
         await this.bus.publishOutbound({
