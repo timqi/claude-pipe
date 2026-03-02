@@ -139,4 +139,45 @@ describe('TelegramChannel', () => {
     expect(String(init.body)).toContain('"message_id":555')
     expect(String(init.body)).toContain('"text":"updated text"')
   })
+
+  it('sends a streaming draft via sendMessageDraft API', async () => {
+    const bus = new MessageBus()
+    const channel = new TelegramChannel(makeConfig(), bus, logger)
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => ({ ok: true, result: { message_id: 777 } })
+    })) as unknown as typeof fetch
+
+    global.fetch = fetchMock
+
+    const sent = await channel.sendMessageDraft('200', 'partial response...')
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toContain('https://api.telegram.org/botTEST_TOKEN/sendMessageDraft')
+    expect(init.method).toBe('POST')
+    expect(String(init.body)).toContain('"chat_id":200')
+    expect(String(init.body)).toContain('"text":"partial response..."')
+    expect(sent).toEqual({ channel: 'telegram', chatId: '200', messageId: '777' })
+  })
+
+  it('returns void from sendMessageDraft when API response has no message_id', async () => {
+    const bus = new MessageBus()
+    const channel = new TelegramChannel(makeConfig(), bus, logger)
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => ({ ok: false })
+    })) as unknown as typeof fetch
+
+    global.fetch = fetchMock
+
+    const sent = await channel.sendMessageDraft('200', 'partial response...')
+    expect(sent).toBeUndefined()
+  })
 })

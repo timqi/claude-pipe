@@ -57,6 +57,7 @@ export type AgentTurnUpdateKind =
   | 'tool_call_started'
   | 'tool_call_finished'
   | 'tool_call_failed'
+  | 'text_streaming'
   | 'turn_finished'
 
 export interface AgentTurnUpdate {
@@ -65,6 +66,8 @@ export interface AgentTurnUpdate {
   message: string
   toolName?: string
   toolUseId?: string
+  /** Partial accumulated response text, present when kind is 'text_streaming'. */
+  text?: string
 }
 
 /**
