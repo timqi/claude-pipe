@@ -3,427 +3,785 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>claude-pipe</title>
+  <title>claude-pipe &mdash; Claude Code from your chat apps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #09090b;
+      --surface: #111113;
+      --surface-2: #18181b;
+      --border: #27272a;
+      --border-hover: #3f3f46;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #d97706;
+      --accent-soft: rgba(217, 119, 6, 0.12);
+      --blue: #3b82f6;
+      --green: #22c55e;
+      --pink: #ec4899;
+      --radius: 12px;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #0a0a0a;
-      color: #e0e0e0;
-      font-family: 'Courier New', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
-      min-height: 100vh;
     }
 
-    .pipe-bg {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 0;
+    /* --- Hero --- */
+    .hero {
+      position: relative;
+      padding: 100px 24px 80px;
+      text-align: center;
       overflow: hidden;
     }
 
-    .pipe-segment {
+    .hero::before {
+      content: '';
       position: absolute;
-      background: linear-gradient(90deg, #1a1a2e, #16213e);
-      border: 1px solid #0f3460;
-      border-radius: 4px;
-      opacity: 0.15;
+      top: -40%; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(217,119,6,0.08) 0%, transparent 70%);
+      pointer-events: none;
     }
 
-    .data-particle {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: #e94560;
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(217,119,6,0.2);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 32px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
       border-radius: 50%;
-      box-shadow: 0 0 10px #e94560, 0 0 20px #e94560;
-      animation: flow linear infinite;
+      animation: pulse-dot 2s ease-in-out infinite;
     }
 
-    @keyframes flow {
-      0% { transform: translateX(-20px); opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { transform: translateX(calc(100vw + 20px)); opacity: 0; }
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 60px 20px;
-      text-align: center;
-    }
-
-    .logo {
-      font-size: 4rem;
-      margin-bottom: 8px;
-      animation: pulse 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
 
     h1 {
-      font-size: 3rem;
-      background: linear-gradient(135deg, #e94560, #0f3460, #e94560);
-      background-size: 200% 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: gradient 4s ease infinite;
-      margin-bottom: 12px;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 20px;
     }
 
-    @keyframes gradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    h1 span { color: var(--accent); }
+
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
     }
 
-    .tagline {
-      font-size: 1.1rem;
-      color: #888;
-      margin-bottom: 50px;
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #f59e0b;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(217,119,6,0.25);
+    }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+    }
+
+    /* --- Terminal --- */
+    .terminal-section {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
     }
 
     .terminal {
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       overflow: hidden;
-      text-align: left;
-      margin: 40px 0;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.4);
     }
 
     .terminal-bar {
-      background: #222;
-      padding: 10px 16px;
+      background: var(--surface-2);
+      padding: 12px 16px;
       display: flex;
-      gap: 8px;
       align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .terminal-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-dot.r { background: #ef4444; }
+    .terminal-dot.y { background: #eab308; }
+    .terminal-dot.g { background: #22c55e; }
 
-    .terminal-dot.red { background: #ff5f57; }
-    .terminal-dot.yellow { background: #ffbd2e; }
-    .terminal-dot.green { background: #28c840; }
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
 
     .terminal-body {
-      padding: 20px;
-      font-size: 0.95rem;
-      line-height: 1.8;
-      min-height: 200px;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.9;
+      min-height: 220px;
     }
 
-    .terminal-body .prompt { color: #28c840; }
-    .terminal-body .cmd { color: #e0e0e0; }
-    .terminal-body .comment { color: #666; }
-    .terminal-body .output { color: #e94560; }
-    .terminal-body .bot { color: #0f9df0; }
+    .terminal-body .prompt { color: var(--green); }
+    .terminal-body .cmd { color: var(--text); }
+    .terminal-body .comment { color: var(--text-dim); }
+    .terminal-body .output { color: var(--accent); }
+    .terminal-body .bot { color: var(--blue); }
     .terminal-body .cursor {
       display: inline-block;
-      width: 8px;
-      height: 16px;
-      background: #28c840;
+      width: 8px; height: 15px;
+      background: var(--green);
       animation: blink 1s step-end infinite;
       vertical-align: text-bottom;
     }
 
-    @keyframes blink {
-      50% { opacity: 0; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* --- Flow diagram --- */
+    .flow-section {
+      padding: 80px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
     }
 
-    .how-it-works {
-      margin: 60px 0;
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 12px;
     }
 
-    .how-it-works h2 {
-      font-size: 1.5rem;
-      color: #e94560;
-      margin-bottom: 30px;
+    h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
     }
 
-    .pipe-diagram {
+    .section-desc {
+      color: var(--text-muted);
+      max-width: 500px;
+      margin: 0 auto 48px;
+      line-height: 1.6;
+    }
+
+    .flow {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0;
+      max-width: 800px;
+      margin: 0 auto;
       flex-wrap: wrap;
-      margin: 20px 0;
     }
 
-    .pipe-node {
-      background: #16213e;
-      border: 2px solid #0f3460;
-      border-radius: 12px;
-      padding: 20px 24px;
-      font-size: 1rem;
-      transition: all 0.3s;
+    .flow-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      transition: all 0.25s;
+      min-width: 120px;
+    }
+
+    .flow-node:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+    }
+
+    .flow-node .icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .flow-node .name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+    .flow-node .desc { color: var(--text-dim); font-size: 0.75rem; }
+
+    .flow-arrow {
+      color: var(--text-dim);
+      font-size: 1.2rem;
+      padding: 0 8px;
+      opacity: 0.4;
+    }
+
+    /* --- Integrations --- */
+    .integrations-section {
+      padding: 80px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .integrations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .integration {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      text-align: left;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .integration::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--stripe-color, var(--border));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .integration:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .integration:hover::before { opacity: 1; }
+
+    .integration .icon-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .integration .int-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      background: var(--icon-bg, var(--surface-2));
+    }
+
+    .integration h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .integration p {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+
+    .integration .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* --- Features --- */
+    .features-section {
+      padding: 80px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .features-section .section-label,
+    .features-section h2,
+    .features-section .section-desc {
+      text-align: center;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      transition: all 0.25s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .feature-card .feat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      line-height: 1.55;
+    }
+
+    /* --- Comparison callout --- */
+    .comparison {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .comparison-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px;
       position: relative;
     }
 
-    .pipe-node:hover {
-      border-color: #e94560;
-      box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
-      transform: translateY(-4px);
+    .comparison-box h3 {
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      font-weight: 700;
     }
 
-    .pipe-node .node-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
-    .pipe-node .node-label { color: #aaa; font-size: 0.8rem; }
-
-    .pipe-connector {
-      font-size: 1.8rem;
-      color: #0f3460;
-      padding: 0 6px;
-      animation: flowRight 2s ease-in-out infinite;
+    .comparison-box p {
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 500px;
+      margin: 0 auto;
+      font-size: 0.92rem;
     }
 
-    @keyframes flowRight {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; color: #e94560; }
+    .comparison-box .versus {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 28px;
+      flex-wrap: wrap;
     }
 
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin: 40px 0;
-      text-align: left;
+    .versus-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
     }
 
-    .feature {
-      background: #111;
-      border: 1px solid #222;
-      border-radius: 10px;
-      padding: 24px;
-      transition: all 0.3s;
+    .versus-item .v-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
     }
 
-    .feature:hover {
-      border-color: #0f3460;
-      transform: translateY(-2px);
+    .versus-item .v-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
     }
 
-    .feature h3 { color: #e94560; margin-bottom: 8px; font-size: 0.95rem; }
-    .feature p { color: #888; font-size: 0.85rem; line-height: 1.5; }
-
-    .cta {
-      margin-top: 50px;
+    .versus-item .v-name {
+      font-weight: 600;
+      font-size: 0.9rem;
     }
 
-    .cta a {
-      display: inline-block;
-      background: linear-gradient(135deg, #e94560, #c81d4e);
-      color: white;
-      text-decoration: none;
-      padding: 14px 36px;
+    .versus-eq {
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* --- CTA --- */
+    .cta-section {
+      padding: 80px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .cta-section h2 { margin-bottom: 16px; }
+
+    .cta-section .section-desc { margin-bottom: 32px; }
+
+    .install-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      font-family: 'Courier New', monospace;
-      font-size: 1rem;
-      font-weight: bold;
-      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 20px;
+      gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+      cursor: pointer;
+      transition: border-color 0.2s;
     }
 
-    .cta a:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(233, 69, 96, 0.4);
+    .install-block:hover { border-color: var(--border-hover); }
+
+    .install-block .dollar { color: var(--text-dim); }
+
+    .install-block .copy-hint {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      border-left: 1px solid var(--border);
+      padding-left: 12px;
     }
 
-    .footer {
-      margin-top: 80px;
-      color: #444;
+    /* --- Footer --- */
+    footer {
+      padding: 40px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
       font-size: 0.8rem;
     }
 
-    .footer a { color: #666; }
-
-    .plumber {
-      font-size: 1.5rem;
-      display: inline-block;
-      animation: wrench 2s ease-in-out infinite;
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
     }
 
-    @keyframes wrench {
-      0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(20deg); }
-      75% { transform: rotate(-20deg); }
+    footer a:hover { color: var(--text); }
+
+    /* --- Responsive --- */
+    @media (max-width: 640px) {
+      .hero { padding: 60px 20px 60px; }
+      .flow { gap: 8px; }
+      .flow-node { padding: 16px; min-width: 90px; }
+      .flow-node .icon { font-size: 1.4rem; }
+      .flow-node .name { font-size: 0.8rem; }
+      .flow-arrow { padding: 0 4px; font-size: 1rem; }
+      .versus-eq { font-size: 1.2rem; }
     }
   </style>
 </head>
 <body>
 
-<div class="pipe-bg" id="pipeBg"></div>
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge"><span class="dot"></span> claude-pipe v1</div>
+  <h1>Claude Code,<br>from your <span>chat app</span></h1>
+  <p class="subtitle">
+    Send a Telegram message. Get code written, files edited, emails drafted, meetings scheduled &mdash; all through the same Claude you know and love.
+  </p>
+  <div class="hero-actions">
+    <a href="https://github.com/georgi/claude-pipe" class="btn btn-primary">View on GitHub</a>
+    <a href="#get-started" class="btn btn-secondary">Get started</a>
+  </div>
+</section>
 
-<div class="container">
-  <div class="logo">🔧</div>
-  <h1>claude-pipe</h1>
-  <p class="tagline">Your personal AI plumber. Connects Claude to your chat apps.</p>
-
+<!-- Terminal -->
+<section class="terminal-section">
   <div class="terminal">
     <div class="terminal-bar">
-      <div class="terminal-dot red"></div>
-      <div class="terminal-dot yellow"></div>
-      <div class="terminal-dot green"></div>
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span class="terminal-title">claude-pipe</span>
+      <div style="width:36px"></div>
     </div>
     <div class="terminal-body" id="terminal"></div>
   </div>
+</section>
 
-  <div class="how-it-works">
-    <h2>How the pipes connect <span class="plumber">🔧</span></h2>
-    <div class="pipe-diagram">
-      <div class="pipe-node">
-        <span class="node-icon">💬</span>
-        You
-        <div class="node-label">Telegram / Discord</div>
+<!-- Flow -->
+<section class="flow-section">
+  <div class="section-label">How it works</div>
+  <h2>Simple plumbing, powerful results</h2>
+  <p class="section-desc">
+    Your message flows through claude-pipe to a real Claude Code session running on your machine.
+  </p>
+  <div class="flow">
+    <div class="flow-node">
+      <div class="icon">&#x1F4AC;</div>
+      <div class="name">You</div>
+      <div class="desc">Telegram / Discord</div>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">
+      <div class="icon">&#x1F527;</div>
+      <div class="name">claude-pipe</div>
+      <div class="desc">Your server</div>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">
+      <div class="icon">&#x2728;</div>
+      <div class="name">Claude Code</div>
+      <div class="desc">Agent CLI</div>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">
+      <div class="icon">&#x1F30D;</div>
+      <div class="name">Everything</div>
+      <div class="desc">Files, APIs, web</div>
+    </div>
+  </div>
+</section>
+
+<!-- Integrations -->
+<section class="integrations-section">
+  <div class="section-label">Integrations</div>
+  <h2>Connect to the tools you use</h2>
+  <p class="section-desc">
+    Since claude-pipe runs Claude Code under the hood, you get access to the full ecosystem of skills and tools &mdash; including Google services.
+  </p>
+  <div class="integrations-grid">
+    <div class="integration" style="--stripe-color:#ea4335;--icon-bg:rgba(234,67,53,0.1)">
+      <div class="icon-row">
+        <div class="int-icon">&#x2709;&#xFE0F;</div>
+        <h3>Gmail</h3>
       </div>
-      <div class="pipe-connector">━━▸</div>
-      <div class="pipe-node">
-        <span class="node-icon">🔧</span>
-        claude-pipe
-        <div class="node-label">The plumbing</div>
+      <p>Search your inbox, draft replies, send emails. All from a Telegram message.</p>
+      <span class="tag" style="background:rgba(234,67,53,0.1);color:#ea4335">gog gmail</span>
+    </div>
+    <div class="integration" style="--stripe-color:#4285f4;--icon-bg:rgba(66,133,244,0.1)">
+      <div class="icon-row">
+        <div class="int-icon">&#x1F4C4;</div>
+        <h3>Google Docs</h3>
       </div>
-      <div class="pipe-connector">━━▸</div>
-      <div class="pipe-node">
-        <span class="node-icon">🧠</span>
-        Claude
-        <div class="node-label">The brain</div>
+      <p>Create, read, and edit documents. Summarize meeting notes. Draft proposals.</p>
+      <span class="tag" style="background:rgba(66,133,244,0.1);color:#4285f4">gog docs</span>
+    </div>
+    <div class="integration" style="--stripe-color:#0f9d58;--icon-bg:rgba(15,157,88,0.1)">
+      <div class="icon-row">
+        <div class="int-icon">&#x1F4C5;</div>
+        <h3>Google Calendar</h3>
       </div>
-      <div class="pipe-connector">━━▸</div>
-      <div class="pipe-node">
-        <span class="node-icon">💻</span>
-        Your machine
-        <div class="node-label">Files, shell, web</div>
+      <p>Check your schedule, create events, find free slots. "What's on my calendar today?"</p>
+      <span class="tag" style="background:rgba(15,157,88,0.1);color:#0f9d58">gog calendar</span>
+    </div>
+    <div class="integration" style="--stripe-color:#f4b400;--icon-bg:rgba(244,180,0,0.1)">
+      <div class="icon-row">
+        <div class="int-icon">&#x1F4BE;</div>
+        <h3>Google Drive</h3>
+      </div>
+      <p>Browse, search, and manage files in your Drive. Find that doc you forgot about.</p>
+      <span class="tag" style="background:rgba(244,180,0,0.1);color:#d97706">gog drive</span>
+    </div>
+    <div class="integration" style="--stripe-color:#3b82f6;--icon-bg:rgba(59,130,246,0.1)">
+      <div class="icon-row">
+        <div class="int-icon">&#x1F4BB;</div>
+        <h3>Code &amp; Shell</h3>
+      </div>
+      <p>Read, write, and refactor code. Run shell commands. Commit and push to git.</p>
+      <span class="tag" style="background:rgba(59,130,246,0.1);color:#3b82f6">full access</span>
+    </div>
+    <div class="integration" style="--stripe-color:#8b5cf6;--icon-bg:rgba(139,92,246,0.1)">
+      <div class="icon-row">
+        <div class="int-icon">&#x1F310;</div>
+        <h3>Web Search</h3>
+      </div>
+      <p>Search the web, fetch pages, research topics. The agent can browse for you.</p>
+      <span class="tag" style="background:rgba(139,92,246,0.1);color:#8b5cf6">brave search</span>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section class="comparison">
+  <div class="comparison-box">
+    <h3>Same Claude, different front door</h3>
+    <p>
+      claude-pipe doesn't limit Claude. It's the full Claude Code experience &mdash; same tools, same skills, same context &mdash; just accessible from your phone instead of a terminal.
+    </p>
+    <div class="versus">
+      <div class="versus-item">
+        <div class="v-icon" style="background:var(--surface-2)">&#x1F4BB;</div>
+        <div class="v-name">Claude Code</div>
+        <div class="v-label">Terminal on your laptop</div>
+      </div>
+      <div class="versus-eq">=</div>
+      <div class="versus-item">
+        <div class="v-icon" style="background:var(--accent-soft)">&#x1F4F1;</div>
+        <div class="v-name">claude-pipe</div>
+        <div class="v-label">Telegram on your phone</div>
       </div>
     </div>
   </div>
+</section>
 
-  <div class="features">
-    <div class="feature">
-      <h3>$ runs locally</h3>
-      <p>No cloud middleman. Your data stays on your machine. The AI agent runs right where your code lives.</p>
+<!-- Features -->
+<section class="features-section">
+  <div class="section-label">Why claude-pipe</div>
+  <h2>Built for how you actually work</h2>
+  <p class="section-desc">
+    A lightweight bridge between your chat apps and a full agent runtime.
+  </p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feat-icon">&#x1F3E0;</div>
+      <h3>Runs on your machine</h3>
+      <p>No cloud relay. Your data stays local. The agent runs where your code and credentials live.</p>
     </div>
-    <div class="feature">
-      <h3>$ multi-channel</h3>
-      <p>Telegram, Discord, or plain CLI. Message your AI assistant from wherever you already hang out.</p>
+    <div class="feature-card">
+      <div class="feat-icon">&#x26A1;</div>
+      <h3>Streaming responses</h3>
+      <p>See Claude thinking in real-time. Draft messages update live as the agent works through your request.</p>
     </div>
-    <div class="feature">
-      <h3>$ full access</h3>
-      <p>The agent can read files, edit code, run commands, and search the web. It's Claude Code, but from your phone.</p>
+    <div class="feature-card">
+      <div class="feat-icon">&#x1F5C2;&#xFE0F;</div>
+      <h3>Workspace aware</h3>
+      <p>Point it at any directory. The agent understands your project structure, reads your CLAUDE.md, and follows your conventions.</p>
     </div>
-    <div class="feature">
-      <h3>$ easy setup</h3>
-      <p>Interactive wizard gets you running in 2 minutes. Just <code style="color:#e94560">npm run dev</code> and follow the prompts.</p>
+    <div class="feature-card">
+      <div class="feat-icon">&#x1F680;</div>
+      <h3>2-minute setup</h3>
+      <p>Interactive wizard configures everything. Pick your channel, paste your bot token, choose a model. Done.</p>
     </div>
   </div>
+</section>
 
-  <div class="cta">
-    <a href="https://github.com/georgi/claude-pipe">git clone &amp;&amp; npm start</a>
+<!-- CTA -->
+<section class="cta-section" id="get-started">
+  <div class="section-label">Get started</div>
+  <h2>Three commands, one assistant</h2>
+  <p class="section-desc">
+    Clone, install, run. The wizard handles the rest.
+  </p>
+  <div class="install-block" onclick="navigator.clipboard.writeText('git clone https://github.com/georgi/claude-pipe && cd claude-pipe && npm run dev')">
+    <span class="dollar">$</span>
+    <span>git clone &amp;&amp; cd claude-pipe &amp;&amp; npm run dev</span>
+    <span class="copy-hint">click to copy</span>
   </div>
+  <br>
+  <a href="https://github.com/georgi/claude-pipe" class="btn btn-primary">View on GitHub</a>
+</section>
 
-  <div class="footer">
-    <p>Built by <a href="https://github.com/georgi">Matthias Georgi</a> with help from Claude</p>
-    <p style="margin-top:8px">No pipes were harmed in the making of this project <span class="plumber">🔧</span></p>
-  </div>
-</div>
+<!-- Footer -->
+<footer>
+  <p>Built by <a href="https://github.com/georgi">Matthias Georgi</a> &middot; Powered by <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a></p>
+</footer>
 
 <script>
-  // Background pipes
-  const bg = document.getElementById('pipeBg');
-  for (let i = 0; i < 12; i++) {
-    const pipe = document.createElement('div');
-    pipe.className = 'pipe-segment';
-    const top = Math.random() * 100;
-    const width = 100 + Math.random() * 400;
-    const height = 4 + Math.random() * 8;
-    pipe.style.cssText = `top:${top}%;left:${Math.random()*80}%;width:${width}px;height:${height}px;transform:rotate(${Math.random()*4-2}deg)`;
-    bg.appendChild(pipe);
-  }
-
-  // Flowing data particles
-  function spawnParticle() {
-    const p = document.createElement('div');
-    p.className = 'data-particle';
-    p.style.top = (Math.random() * 100) + '%';
-    p.style.animationDuration = (3 + Math.random() * 5) + 's';
-    bg.appendChild(p);
-    setTimeout(() => p.remove(), 8000);
-  }
-  setInterval(spawnParticle, 600);
-
-  // Terminal typing animation
   const lines = [
     { type: 'prompt', text: '$ ' },
-    { type: 'cmd', text: 'npm run dev', delay: 60 },
+    { type: 'cmd', text: 'npm run dev', delay: 50 },
     { type: 'br' },
-    { type: 'comment', text: '# wizard: choosing Telegram...', delay: 30 },
-    { type: 'br' },
-    { type: 'output', text: '> claude-pipe running on Telegram', delay: 30 },
+    { type: 'output', text: '  claude-pipe running on Telegram', delay: 25 },
     { type: 'br' },
     { type: 'br' },
-    { type: 'comment', text: '# you send a message from your phone:', delay: 30 },
+    { type: 'bot', text: '  you: "what meetings do I have tomorrow?"', delay: 35 },
     { type: 'br' },
-    { type: 'bot', text: '[telegram] you: "refactor the auth module"', delay: 40 },
+    { type: 'output', text: '  [claude] checking Google Calendar...', delay: 40 },
     { type: 'br' },
-    { type: 'output', text: '[claude] reading src/auth/...', delay: 50 },
+    { type: 'bot', text: '  claude: "You have 2 meetings tomorrow:', delay: 30 },
     { type: 'br' },
-    { type: 'output', text: '[claude] editing 3 files...', delay: 50 },
+    { type: 'bot', text: '    10am - Standup (30min)', delay: 30 },
     { type: 'br' },
-    { type: 'bot', text: '[telegram] claude: "Done! Refactored auth into 3 modules. Want me to commit?"', delay: 35 },
+    { type: 'bot', text: '    2pm  - Design review (1hr)"', delay: 30 },
+    { type: 'br' },
+    { type: 'br' },
+    { type: 'bot', text: '  you: "draft a reply to the latest email from Sarah"', delay: 35 },
+    { type: 'br' },
+    { type: 'output', text: '  [claude] searching Gmail... drafting reply...', delay: 40 },
+    { type: 'br' },
+    { type: 'bot', text: '  claude: "Draft ready. Want me to send it?"', delay: 30 },
     { type: 'br' },
     { type: 'cursor' },
   ];
 
   const terminal = document.getElementById('terminal');
-  let lineIdx = 0;
-  let charIdx = 0;
-  let currentSpan = null;
+  let li = 0, ci = 0, span = null;
 
-  function typeNext() {
-    if (lineIdx >= lines.length) return;
-    const line = lines[lineIdx];
-
-    if (line.type === 'br') {
-      terminal.appendChild(document.createElement('br'));
-      lineIdx++;
-      setTimeout(typeNext, 300);
-      return;
-    }
-
-    if (line.type === 'cursor') {
-      const c = document.createElement('span');
-      c.className = 'cursor';
-      terminal.appendChild(c);
-      return;
-    }
-
-    if (!currentSpan) {
-      currentSpan = document.createElement('span');
-      currentSpan.className = line.type;
-      terminal.appendChild(currentSpan);
-    }
-
-    if (charIdx < line.text.length) {
-      currentSpan.textContent += line.text[charIdx];
-      charIdx++;
-      setTimeout(typeNext, line.delay || 40);
-    } else {
-      currentSpan = null;
-      charIdx = 0;
-      lineIdx++;
-      setTimeout(typeNext, 200);
-    }
+  function type() {
+    if (li >= lines.length) return;
+    const l = lines[li];
+    if (l.type === 'br') { terminal.appendChild(document.createElement('br')); li++; setTimeout(type, 200); return; }
+    if (l.type === 'cursor') { const c = document.createElement('span'); c.className = 'cursor'; terminal.appendChild(c); return; }
+    if (!span) { span = document.createElement('span'); span.className = l.type; terminal.appendChild(span); }
+    if (ci < l.text.length) { span.textContent += l.text[ci]; ci++; setTimeout(type, l.delay || 40); }
+    else { span = null; ci = 0; li++; setTimeout(type, 150); }
   }
 
-  setTimeout(typeNext, 800);
+  setTimeout(type, 600);
 </script>
 
 </body>
