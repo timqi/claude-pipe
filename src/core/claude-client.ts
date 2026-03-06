@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import type { ClaudePipeConfig } from '../config/schema.js'
 import type { ModelClient } from './model-client.js'
@@ -26,6 +27,14 @@ function getClaudeCodeExecutablePath(): string {
   const localPath = join(homedir(), '.claude', 'local', 'claude')
   if (existsSync(localPath)) return localPath
   return 'claude'
+}
+
+/** Reads SOUL.md from the project root, if it exists. */
+function loadSoulPrompt(): string | null {
+  const thisDir = dirname(fileURLToPath(import.meta.url))
+  const soulPath = join(thisDir, '..', '..', 'SOUL.md')
+  if (!existsSync(soulPath)) return null
+  return readFileSync(soulPath, 'utf-8').trim()
 }
 
 const defaultClaudeArgs = [
@@ -112,6 +121,11 @@ export class ClaudeClient implements ModelClient {
     const savedSession = this.store.get(conversationKey)
     const executable = this.config.claudeCli?.command?.trim() || getClaudeCodeExecutablePath()
     const args = [...(this.config.claudeCli?.args ?? defaultClaudeArgs), '--model', this.config.model]
+
+    const soul = loadSoulPrompt()
+    if (soul) {
+      args.push('--append-system-prompt', soul)
+    }
 
     if (savedSession?.sessionId) {
       args.push('--resume', savedSession.sessionId)
