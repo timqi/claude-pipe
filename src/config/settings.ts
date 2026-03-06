@@ -5,6 +5,11 @@ import * as os from 'node:os'
 /**
  * Persisted settings stored in ~/.claude-pipe/settings.json.
  */
+export interface PersonalitySettings {
+  name: string
+  traits: string
+}
+
 export interface Settings {
   provider?: 'claude' | 'codex'
   claudeCli?: {
@@ -18,6 +23,7 @@ export interface Settings {
   allowChannels?: string[]
   model: string
   workspace: string
+  personality?: PersonalitySettings
 }
 
 function defaultConfigDir(): string {

@@ -65,6 +65,12 @@ export const configSchema = z.object({
       maxBytes: 1_000_000,
       maxFiles: 3
     }),
+  personality: z
+    .object({
+      name: z.string(),
+      traits: z.string()
+    })
+    .optional(),
   sessionStorePath: z.string(),
   maxToolIterations: z.number().int().positive().default(20),
   heartbeat: z

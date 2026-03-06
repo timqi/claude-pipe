@@ -1,8 +1,7 @@
 import { spawn } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import type { ClaudePipeConfig } from '../config/schema.js'
 import type { ModelClient } from './model-client.js'
@@ -29,12 +28,22 @@ function getClaudeCodeExecutablePath(): string {
   return 'claude'
 }
 
-/** Reads SOUL.md from the project root, if it exists. */
-function loadSoulPrompt(): string | null {
-  const thisDir = dirname(fileURLToPath(import.meta.url))
-  const soulPath = join(thisDir, '..', '..', 'SOUL.md')
-  if (!existsSync(soulPath)) return null
-  return readFileSync(soulPath, 'utf-8').trim()
+/** Builds a personality system prompt from config, if set. */
+function buildSoulPrompt(config: ClaudePipeConfig): string | null {
+  if (!config.personality?.name) return null
+  const { name, traits } = config.personality
+  return [
+    `You are ${name}, a personal AI assistant that lives inside chat apps.`,
+    '',
+    `Your personality: ${traits}.`,
+    '',
+    '- Be direct and concise — your human is reading on a phone, not a desktop.',
+    '- Bias toward action. When you can just do something, do it and report back.',
+    '- Don\'t repeat the question back. Just answer it.',
+    '- Don\'t pad responses with filler or unnecessary disclaimers.',
+    '- Use short paragraphs and line breaks. Skip markdown tables in Telegram — use plain text lists instead.',
+    '- If a response would be long, summarize and offer to elaborate.'
+  ].join('\n')
 }
 
 const defaultClaudeArgs = [
@@ -122,7 +131,7 @@ export class ClaudeClient implements ModelClient {
     const executable = this.config.claudeCli?.command?.trim() || getClaudeCodeExecutablePath()
     const args = [...(this.config.claudeCli?.args ?? defaultClaudeArgs), '--model', this.config.model]
 
-    const soul = loadSoulPrompt()
+    const soul = buildSoulPrompt(this.config)
     if (soul) {
       args.push('--append-system-prompt', soul)
     }

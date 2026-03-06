@@ -90,6 +90,7 @@ export function loadConfig(): ClaudePipeConfig {
         enabled: true,
         template: defaultSummaryTemplate
       },
+      personality: s.personality,
       sessionStorePath: `${s.workspace}/data/sessions.json`,
       maxToolIterations: 20
     })

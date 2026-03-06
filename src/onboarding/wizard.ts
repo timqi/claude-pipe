@@ -3,7 +3,7 @@ import * as path from 'node:path'
 import * as readline from 'node:readline'
 import { spawn } from 'node:child_process'
 
-import { type Settings, writeSettings } from '../config/settings.js'
+import { type PersonalitySettings, type Settings, writeSettings } from '../config/settings.js'
 
 const DEFAULT_CLAUDE_CLI_ARGS = [
   '--print',
@@ -372,6 +372,35 @@ async function chooseWorkspace(rl: readline.Interface, currentWorkspace?: string
 }
 
 /* ------------------------------------------------------------------ */
+/*  Step 7 – Personality                                               */
+/* ------------------------------------------------------------------ */
+
+async function choosePersonality(
+  rl: readline.Interface,
+  current?: PersonalitySettings
+): Promise<PersonalitySettings> {
+  console.log(
+    '\nGive your assistant a personality!\n' +
+      '  Pick a name and describe how it should behave.\n'
+  )
+
+  const defaultName = current?.name || 'Piper'
+  const name = (await ask(rl, `Assistant name [${defaultName}]: `)) || defaultName
+
+  console.log(
+    '\n  Describe its personality in a few words.\n' +
+      '  Examples: "friendly and concise", "sarcastic but helpful",\n' +
+      '  "formal and professional", "casual and witty"\n'
+  )
+  const defaultTraits = current?.traits || 'friendly, direct, and concise'
+  const traits =
+    (await ask(rl, `Personality [${defaultTraits}]: `)) || defaultTraits
+
+  console.log(`\n✔  Your assistant is called ${name} — ${traits}.\n`)
+  return { name, traits }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main onboarding flow                                               */
 /* ------------------------------------------------------------------ */
 
@@ -393,6 +422,7 @@ export async function runOnboarding(existingSettings?: Settings): Promise<Settin
     const token = await collectCredentials(rl, channel, existingSettings?.token)
     const model = await chooseModelForProvider(rl, provider, existingSettings?.model)
     const workspace = await chooseWorkspace(rl, existingSettings?.workspace)
+    const personality = await choosePersonality(rl, existingSettings?.personality)
 
     const settings: Settings = {
       provider,
@@ -410,7 +440,8 @@ export async function runOnboarding(existingSettings?: Settings): Promise<Settin
       token,
       allowFrom: existingSettings?.allowFrom ?? [],
       model,
-      workspace
+      workspace,
+      personality
     }
 
     writeSettings(settings)
