@@ -596,6 +596,8 @@ export class CodexClient implements ModelClient {
     return responseText || 'I completed processing but have no response to return.'
   }
 
+  cancelTurn(_conversationKey: string): void {}
+
   closeAll(): void {}
 
   async startNewSession(conversationKey: string): Promise<void> {

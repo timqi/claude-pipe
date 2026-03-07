@@ -130,3 +130,41 @@ export function pingCommand(): CommandDefinition {
     }
   }
 }
+
+/**
+ * /stop
+ * Cancels the in-progress Claude turn for the current conversation.
+ */
+export function stopCommand(
+  cancelTurn: (conversationKey: string) => void
+): CommandDefinition {
+  return {
+    name: 'stop',
+    category: 'utility',
+    description: 'Cancel the in-progress Claude turn for this chat',
+    aliases: ['cancel'],
+    permission: 'user',
+    async execute(ctx): Promise<CommandResult> {
+      cancelTurn(ctx.conversationKey)
+      return { content: 'Stopped.' }
+    }
+  }
+}
+
+/**
+ * /restart
+ * Restarts the bot process. Relies on a process manager (systemd, PM2, etc.) to bring it back up.
+ */
+export function restartCommand(): CommandDefinition {
+  return {
+    name: 'restart',
+    category: 'utility',
+    description: 'Restart the bot process',
+    aliases: [],
+    permission: 'admin',
+    async execute(): Promise<CommandResult> {
+      setImmediate(() => process.exit(0))
+      return { content: 'Restarting...' }
+    }
+  }
+}

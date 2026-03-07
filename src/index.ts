@@ -84,19 +84,20 @@ async function main(): Promise<void> {
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)
 
-  const shutdown = async (signal: string): Promise<void> => {
+  let shuttingDown = false
+  const shutdown = (signal: string): void => {
+    if (shuttingDown) return
+    shuttingDown = true
     logger.info('shutdown.signal', { signal })
     heartbeat.stop()
     agent.stop()
-    await channels.stopAll()
+    // Force exit after 2 s in case channel pollers are slow to stop
+    setTimeout(() => process.exit(0), 2000).unref()
+    void channels.stopAll().then(() => process.exit(0))
   }
 
-  process.on('SIGINT', () => {
-    void shutdown('SIGINT')
-  })
-  process.on('SIGTERM', () => {
-    void shutdown('SIGTERM')
-  })
+  process.on('SIGINT', () => shutdown('SIGINT'))
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
 
   await channels.startAll()
   await agent.start()

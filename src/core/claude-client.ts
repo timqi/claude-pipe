@@ -93,6 +93,7 @@ function summarizeToolResult(content: unknown): string {
  */
 export class ClaudeClient implements ModelClient {
   private readonly transcript: TranscriptLogger
+  private readonly activeChildren = new Map<string, ReturnType<typeof spawn>>()
 
   constructor(
     private readonly config: ClaudePipeConfig,
@@ -152,6 +153,7 @@ export class ClaudeClient implements ModelClient {
       cwd: this.config.workspace,
       env: process.env
     })
+    this.activeChildren.set(conversationKey, child)
     this.logger.info('claude.spawn_start', {
       conversationKey,
       executable,
@@ -309,9 +311,13 @@ export class ClaudeClient implements ModelClient {
     const exit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
       (resolve, reject) => {
         child.on('error', reject)
-        child.on('close', (code, signal) => resolve({ code, signal }))
+        child.on('close', (code, signal) => {
+          this.activeChildren.delete(conversationKey)
+          resolve({ code, signal })
+        })
       }
     ).catch((error: unknown) => {
+      this.activeChildren.delete(conversationKey)
       throw new Error(
         `failed to start claude cli: ${error instanceof Error ? error.message : String(error)}`
       )
@@ -387,6 +393,15 @@ export class ClaudeClient implements ModelClient {
     })
 
     return responseText || fallbackResultText || 'I completed processing but have no response to return.'
+  }
+
+  /** Kills the active Claude subprocess for the given conversation, if any. */
+  cancelTurn(conversationKey: string): void {
+    const child = this.activeChildren.get(conversationKey)
+    if (child) {
+      child.kill('SIGTERM')
+      this.activeChildren.delete(conversationKey)
+    }
   }
 
   /** No-op in subprocess-per-turn mode. */

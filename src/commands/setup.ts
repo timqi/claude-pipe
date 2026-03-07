@@ -8,7 +8,7 @@ import {
   sessionInfoCommand,
   sessionDeleteCommand
 } from './definitions/session.js'
-import { helpCommand, statusCommand, pingCommand, reloadCommand } from './definitions/utility.js'
+import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
 import { CommandHandler } from './handler.js'
@@ -106,6 +106,8 @@ export function setupCommands(
   )
   registry.register(pingCommand())
   registry.register(reloadCommand(config, loadConfig))
+  registry.register(stopCommand((key) => claude.cancelTurn(key)))
+  registry.register(restartCommand())
 
   // --- Custom commands ---
   for (const cmd of options.customCommands ?? []) {

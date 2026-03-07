@@ -5,6 +5,7 @@ import type { ToolContext } from './types.js'
  */
 export interface ModelClient {
   runTurn(conversationKey: string, userText: string, context: ToolContext): Promise<string>
+  cancelTurn(conversationKey: string): void
   closeAll(): void
   startNewSession(conversationKey: string): Promise<void>
 }
