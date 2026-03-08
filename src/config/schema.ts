@@ -71,6 +71,7 @@ export const configSchema = z.object({
       traits: z.string()
     })
     .optional(),
+  env: z.record(z.string()).optional(),
   sessionStorePath: z.string(),
   maxToolIterations: z.number().int().positive().default(20),
   heartbeat: z

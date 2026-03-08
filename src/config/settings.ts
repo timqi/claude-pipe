@@ -24,6 +24,7 @@ export interface Settings {
   model: string
   workspace: string
   personality?: PersonalitySettings
+  env?: Record<string, string>
 }
 
 function defaultConfigDir(): string {

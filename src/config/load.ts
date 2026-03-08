@@ -55,6 +55,16 @@ export function loadConfig(): ClaudePipeConfig {
 
   if (settingsExist()) {
     const s = readSettings()
+
+    // Apply env vars from settings to process.env (don't override existing vars)
+    if (s.env) {
+      for (const [key, value] of Object.entries(s.env)) {
+        if (process.env[key] === undefined) {
+          process.env[key] = value
+        }
+      }
+    }
+
     const llmProvider = s.provider ?? 'claude'
 
     const telegramEnabled = s.channel === 'telegram'
