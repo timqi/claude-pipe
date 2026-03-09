@@ -200,7 +200,7 @@ export class AgentLoop {
     // Extract file attachment markers from the response: [[file:/path/to/file.ext]] or [[file:/path|caption]]
     const attachments: FileAttachment[] = []
     const content = rawContent.replace(
-      /\[\[file:(.*?)(?:\|(.*?))?\]\]/g,
+      /\[\[file:([^|\]]+?)(?:\|([^\]]*))?\]\]/g,
       (_match, filePath: string, caption?: string) => {
         const trimmedCaption = caption?.trim()
         attachments.push({ filePath: filePath.trim(), ...(trimmedCaption ? { caption: trimmedCaption } : {}) })
