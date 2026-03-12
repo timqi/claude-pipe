@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 
 import type { ClaudePipeConfig } from '../config/schema.js'
-import type { ModelClient } from './model-client.js'
+import type { ActiveTurnInfo, ModelClient } from './model-client.js'
 import { SessionStore } from './session-store.js'
 import { TranscriptLogger } from './transcript-logger.js'
 import type { AgentTurnUpdate, Logger, ToolContext } from './types.js'
@@ -598,7 +598,7 @@ export class CodexClient implements ModelClient {
 
   cancelTurn(_conversationKey: string): void {}
 
-  getActiveTurns(): import('./model-client.js').ActiveTurnInfo[] { return [] }
+  getActiveTurns(): ActiveTurnInfo[] { return [] }
 
   closeAll(): void {}
 

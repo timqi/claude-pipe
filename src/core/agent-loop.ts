@@ -152,6 +152,7 @@ export class AgentLoop {
     const toolUpdates: Array<{ id: string; label: string }> = []
     let heartbeatTimer: NodeJS.Timeout | null = null
     let lastBaseContent = ''
+    let lastSentContent = ''
     let lastStreamedText = ''
 
     const heartbeatCallback = (): void => {
@@ -287,20 +288,24 @@ export class AgentLoop {
         }
       }
 
+      const toolStatus = toolUpdates.map((t) => t.label).join('\n')
+
       if (streamMessage) {
         // Append tool progress below the streamed text instead of overwriting
-        const toolSuffix = toolUpdates.map((t) => t.label).join('\n')
-        lastBaseContent = lastStreamedText + '\n\n' + toolSuffix
+        lastBaseContent = lastStreamedText + '\n\n' + toolStatus
         const content = lastBaseContent + statusFooter(inbound.channel, false)
-        try {
-          await this.channelManager.editMessage(streamMessage, content)
-        } catch {
-          // Non-critical
+        if (content !== lastSentContent) {
+          lastSentContent = content
+          try {
+            await this.channelManager.editMessage(streamMessage, content)
+          } catch {
+            // Non-critical
+          }
         }
         return
       }
 
-      lastBaseContent = toolUpdates.map((t) => t.label).join('\n')
+      lastBaseContent = toolStatus
       const statusText = lastBaseContent + statusFooter(inbound.channel, false)
       try {
         if (statusMessage) {

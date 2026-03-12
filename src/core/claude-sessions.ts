@@ -191,8 +191,10 @@ export function createClaudeSessionService(): ClaudeSessionService {
       const filePath = path.join(dir, `${sessionId}.jsonl`)
       try {
         await unlink(filePath)
-      } catch {
-        // File may already be gone
+      } catch (err: unknown) {
+        if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw err
+        }
       }
     }
   }
