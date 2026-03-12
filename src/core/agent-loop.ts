@@ -8,8 +8,11 @@ import type { AgentTurnUpdate, ChannelName, FileAttachment, InboundMessage, Logg
 import { resolveWorkspace } from './workspace.js'
 
 /** Truncates a tool detail string to fit in a chat status line. */
-function truncateDetail(value: string, max: number): string {
-  const oneLine = value.split('\n')[0]!.trim()
+function truncateDetail(value: string, max: number, workspace?: string): string {
+  let oneLine = value.split('\n')[0]!.trim()
+  if (workspace && oneLine.startsWith(workspace)) {
+    oneLine = oneLine.slice(workspace.length).replace(/^\//, '')
+  }
   if (oneLine.length <= max) return oneLine
   return `${oneLine.slice(0, max)}…`
 }
@@ -267,7 +270,7 @@ export class AgentLoop {
 
       const toolId = update.toolUseId ?? update.toolName ?? 'tool'
       const toolName = update.toolName ?? 'tool'
-      const detail = update.toolDetail ? truncateDetail(update.toolDetail, 60) : ''
+      const detail = update.toolDetail ? truncateDetail(update.toolDetail, 60, workspace) : ''
       const toolLabel = detail ? `${toolName}: ${detail}` : toolName
 
       if (update.kind === 'tool_call_started') {
@@ -288,7 +291,16 @@ export class AgentLoop {
         }
       }
 
-      const toolStatus = toolUpdates.map((t) => t.label).join('\n')
+      const MAX_TOOL_LINES = 10
+      const visibleTools =
+        toolUpdates.length > MAX_TOOL_LINES
+          ? toolUpdates.slice(-MAX_TOOL_LINES)
+          : toolUpdates
+      const toolPrefix =
+        toolUpdates.length > MAX_TOOL_LINES
+          ? `… ${toolUpdates.length - MAX_TOOL_LINES} more\n`
+          : ''
+      const toolStatus = toolPrefix + visibleTools.map((t) => t.label).join('\n')
 
       if (streamMessage) {
         // Append tool progress below the streamed text instead of overwriting
