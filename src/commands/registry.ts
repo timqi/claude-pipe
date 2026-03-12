@@ -46,13 +46,18 @@ export class CommandRegistry {
   toMeta(): CommandMeta[] {
     return this.all().map((cmd) => {
       const group = cmd.category !== 'utility' ? cmd.category : undefined
-      const telegramName = group ? `${group}_${cmd.name}` : cmd.name
+      // Strip group prefix from name for Discord subcommands
+      // e.g. "session_new" under group "session" → subcommand "new"
+      const shortName =
+        group && cmd.name.startsWith(`${group}_`)
+          ? cmd.name.slice(group.length + 1)
+          : cmd.name
       return {
-        name: cmd.name,
+        name: shortName,
         description: cmd.description,
         category: cmd.category,
         ...(group ? { group } : {}),
-        telegramName
+        telegramName: cmd.name
       }
     })
   }

@@ -64,7 +64,7 @@ describe('CommandRegistry', () => {
   it('generates serializable command metadata', () => {
     const registry = new CommandRegistry()
     registry.register(makeCommand({ name: 'ping', category: 'utility' }))
-    registry.register(makeCommand({ name: 'new', category: 'session' }))
+    registry.register(makeCommand({ name: 'session_new', category: 'session' }))
 
     const meta = registry.toMeta()
     const ping = meta.find((m) => m.name === 'ping')
@@ -72,6 +72,8 @@ describe('CommandRegistry', () => {
 
     expect(ping?.telegramName).toBe('ping')
     expect(ping?.group).toBeUndefined()
+    // Discord subcommand name strips group prefix: "session_new" → "new"
+    expect(newCmd?.name).toBe('new')
     expect(newCmd?.telegramName).toBe('session_new')
     expect(newCmd?.group).toBe('session')
   })
