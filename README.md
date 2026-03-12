@@ -128,7 +128,8 @@ During a turn, tool call progress and streaming text are pushed back to the chat
 | `src/core/bus.ts` | Async message bus with inbound/outbound queues |
 | `src/channels/manager.ts` | Owns channel lifecycle and outbound dispatch |
 | `src/core/client-factory.ts` | Creates Claude or Codex model client based on config |
-| `src/core/session-store.ts` | Persists conversation sessions to a JSON file |
+| `src/core/session-store.ts` | Persists conversation sessions to `~/.claude-pipe/sessions.json` |
+| `src/core/workspace.ts` | Resolves per-channel workspace from config |
 | `src/commands/handler.ts` | Slash command interception and execution |
 | `src/config/load.ts` | Loads and validates settings from `~/.claude-pipe/settings.json` |
 
@@ -161,7 +162,24 @@ Configuration is stored in `~/.claude-pipe/settings.json` and created by the onb
 | `allowFrom` | Array of allowed user IDs (empty = allow everyone) |
 | `allowChannels` | Discord-only channel ID allowlist (empty/missing = allow all channels) |
 | `model` | Claude model to use (e.g., `claude-haiku-4`, `claude-sonnet-4-5`, `claude-opus-4-5`) |
-| `workspace` | Root directory Claude can access |
+| `workspace` | Root directory Claude can access (default fallback) |
+| `channelWorkspaces` | Maps conversation keys to workspace paths (see below) |
+
+#### Per-channel workspaces
+
+You can map different channels/chats to different project directories:
+
+```json
+{
+  "workspace": "/default/project",
+  "channelWorkspaces": {
+    "discord:123456": "/path/to/project-a",
+    "telegram:789012": "/path/to/project-b"
+  }
+}
+```
+
+Keys use the format `channel:chatId` (e.g. `discord:123456`, `telegram:789012`). Unmapped channels fall back to the global `workspace`.
 
 ### Advanced configuration
 
@@ -169,7 +187,7 @@ For advanced options like transcript logging or custom summary prompts, you can 
 
 | Variable | What it does |
 |---|---|
-| `CLAUDEPIPE_SESSION_STORE_PATH` | Where to save session data (default: `{workspace}/data/sessions.json`) |
+| `CLAUDEPIPE_SESSION_STORE_PATH` | Where to save session data (default: `~/.claude-pipe/sessions.json`) |
 | `CLAUDEPIPE_MAX_TOOL_ITERATIONS` | Max tool calls per turn (default: 20) |
 | `CLAUDEPIPE_SUMMARY_PROMPT_ENABLED` | Enable summary prompt templates |
 | `CLAUDEPIPE_SUMMARY_PROMPT_TEMPLATE` | Template for summary requests (supports `{{workspace}}` and `{{request}}`) |
@@ -211,6 +229,6 @@ npm run test:run # run tests once
 
 ## Current limitations
 
-- Text only — no images, voice messages, or file attachments yet
+- Text and voice (via whisper transcription) — no images yet
 - Runs locally, not designed for server deployment
 - No scheduled or background tasks

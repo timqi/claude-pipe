@@ -47,8 +47,6 @@ claude-pipe/
       telegram.ts
       discord.ts
       manager.ts
-  data/
-    sessions.json
 ```
 
 ## 4. Runtime Flow
@@ -116,7 +114,8 @@ export interface ClaudePipeConfig {
     maxBytes?: number
     maxFiles?: number
   }
-  sessionStorePath: string // default: ./data/sessions.json
+  channelWorkspaces?: Record<string, string> // maps conversation keys to workspace paths
+  sessionStorePath: string // default: ~/.claude-pipe/sessions.json
   maxToolIterations: number // default: 20
 }
 ```
@@ -126,11 +125,12 @@ Config source order:
 2. environment overrides
 
 ## 7. Session Store Spec
-- File: JSON object at `sessionStorePath`.
+- File: JSON object at `sessionStorePath` (default: `~/.claude-pipe/sessions.json`).
 - Key: `channel:chatId`.
 - Value: `{ sessionId, updatedAt }`.
 - Behavior:
   - load once at startup
+  - auto-migrate from legacy `{workspace}/data/sessions.json` if new path is missing
   - atomic write on update (write temp + rename)
   - no transcript or user content storage
 
