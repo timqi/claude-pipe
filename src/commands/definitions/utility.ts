@@ -55,7 +55,13 @@ export function helpCommand(registry: CommandRegistry): CommandDefinition {
  * Reports basic runtime status.
  */
 export function statusCommand(
-  getStatus: () => { model: string; workspace: string; channels: string[] }
+  getStatus: (conversationKey: string) => {
+    model: string
+    workspace: string
+    currentWorkspace: string
+    channels: string[]
+    sessions: Array<{ key: string; workspace: string; updatedAt: string }>
+  }
 ): CommandDefinition {
   return {
     name: 'status',
@@ -63,15 +69,24 @@ export function statusCommand(
     description: 'Show bot runtime status',
     aliases: [],
     permission: 'user',
-    async execute(): Promise<CommandResult> {
-      const status = getStatus()
-      return {
-        content:
-          `**Status:**\n` +
-          `• Model: ${status.model}\n` +
-          `• Workspace: ${status.workspace}\n` +
-          `• Channels: ${status.channels.join(', ')}`
+    async execute(ctx): Promise<CommandResult> {
+      const status = getStatus(ctx.conversationKey)
+      const lines = [
+        '**Status:**',
+        `• Model: ${status.model}`,
+        `• Workspace: ${status.currentWorkspace}`,
+        `• Default workspace: ${status.workspace}`,
+        `• Channels: ${status.channels.join(', ')}`
+      ]
+      if (status.sessions.length > 0) {
+        lines.push('', '**Active sessions:**')
+        for (const s of status.sessions) {
+          lines.push(`• ${s.key} → ${s.workspace} (${s.updatedAt})`)
+        }
+      } else {
+        lines.push('', 'No active sessions.')
       }
+      return { content: lines.join('\n') }
     }
   }
 }

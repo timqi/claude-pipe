@@ -95,15 +95,29 @@ export function setupCommands(
 
   // --- Utility commands ---
   registry.register(
-    statusCommand(() => ({
-      model: config.model,
-      workspace: config.workspace,
-      channels: [
-        ...(config.channels.telegram.enabled ? ['telegram'] : []),
-        ...(config.channels.discord.enabled ? ['discord'] : []),
-        ...(config.channels.cli?.enabled ? ['cli'] : [])
-      ]
-    }))
+    statusCommand((conversationKey) => {
+      const sessions: Array<{ key: string; workspace: string; updatedAt: string }> = []
+      for (const [key, record] of Object.entries(sessionStore.entries())) {
+        if (record) {
+          sessions.push({
+            key,
+            workspace: resolveWorkspace(config, key),
+            updatedAt: record.updatedAt
+          })
+        }
+      }
+      return {
+        model: config.model,
+        workspace: config.workspace,
+        currentWorkspace: resolveWorkspace(config, conversationKey),
+        channels: [
+          ...(config.channels.telegram.enabled ? ['telegram'] : []),
+          ...(config.channels.discord.enabled ? ['discord'] : []),
+          ...(config.channels.cli?.enabled ? ['cli'] : [])
+        ],
+        sessions
+      }
+    })
   )
   registry.register(pingCommand())
   registry.register(reloadCommand(config, loadConfig))
