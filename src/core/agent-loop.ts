@@ -209,10 +209,17 @@ export class AgentLoop {
         startHeartbeat()
       } else if (update.kind === 'tool_call_finished') {
         const entry = toolUpdates.find((t) => t.id === toolId)
-        if (entry) entry.label = `✅ ${toolLabel}`
+        if (entry) {
+          // Preserve detail from start event if finish event has none
+          const existing = entry.label.replace(/^[^\s]+\s/, '')
+          entry.label = `✅ ${detail ? toolLabel : existing}`
+        }
       } else if (update.kind === 'tool_call_failed') {
         const entry = toolUpdates.find((t) => t.id === toolId)
-        if (entry) entry.label = `❌ ${toolLabel}`
+        if (entry) {
+          const existing = entry.label.replace(/^[^\s]+\s/, '')
+          entry.label = `❌ ${detail ? toolLabel : existing}`
+        }
       }
 
       // Don't overwrite a streaming text draft with tool status
