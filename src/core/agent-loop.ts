@@ -232,14 +232,17 @@ export class AgentLoop {
       }
     }
 
-    const rawContent = await this.client.runTurn(conversationKey, modelInput, {
-      workspace: this.config.workspace,
-      channel: inbound.channel,
-      chatId: inbound.chatId,
-      onUpdate: publishProgress
-    })
-
-    stopHeartbeat()
+    let rawContent: string
+    try {
+      rawContent = await this.client.runTurn(conversationKey, modelInput, {
+        workspace: this.config.workspace,
+        channel: inbound.channel,
+        chatId: inbound.chatId,
+        onUpdate: publishProgress
+      })
+    } finally {
+      stopHeartbeat()
+    }
 
     // Extract file attachment markers from the response: [[file:/path/to/file.ext]] or [[file:/path|caption]]
     const attachments: FileAttachment[] = []
