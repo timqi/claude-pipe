@@ -45,7 +45,8 @@ export function sessionNewCommand(
  */
 export function sessionListCommand(
   getWorkspace: (conversationKey: string) => string,
-  sessionService: ClaudeSessionService
+  sessionService: ClaudeSessionService,
+  getSessionId: (conversationKey: string) => string | undefined
 ): CommandDefinition {
   return {
     name: 'session_list',
@@ -59,13 +60,15 @@ export function sessionListCommand(
       if (sessions.length === 0) {
         return { content: 'No sessions found for this workspace.' }
       }
+      const currentSessionId = getSessionId(ctx.conversationKey)
       const cap = 20
       const shown = sessions.slice(0, cap)
       const lines = shown.map((s, i) => {
         const shortId = s.sessionId.slice(0, 8)
         const msg = s.firstMessage.length > 50 ? s.firstMessage.slice(0, 50) + '…' : s.firstMessage
         const date = s.lastActive ? s.lastActive.slice(0, 10) : 'unknown'
-        return `${i + 1}. \`${shortId}\` — "${msg}" (${date})`
+        const active = currentSessionId === s.sessionId ? ' *' : ''
+        return `${i + 1}. \`${shortId}\`${active} — "${msg}" (${date})`
       })
       let header = `**Sessions in ${workspace} (${sessions.length}):**`
       if (sessions.length > cap) {
@@ -91,6 +94,7 @@ export function sessionSelectCommand(
     description: 'Switch to a session by ID',
     usage: '/session_select <id> — switch to a session (prefix match supported)',
     aliases: ['select', 'switch', 'resume'],
+    args: [{ name: 'session_id', description: 'Session ID or prefix', required: true }],
     permission: 'user',
     async execute(ctx: CommandContext): Promise<CommandResult> {
       const prefix = ctx.args[0]

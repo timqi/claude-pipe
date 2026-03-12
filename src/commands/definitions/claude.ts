@@ -14,6 +14,7 @@ export function claudeAskCommand(
     description: 'Send a prompt to Claude',
     usage: '/claude_ask <prompt>',
     aliases: ['ask'],
+    args: [{ name: 'prompt', description: 'Prompt to send to Claude', required: true }],
     permission: 'user',
     async execute(ctx): Promise<CommandResult> {
       if (!ctx.rawArgs) {
@@ -39,6 +40,7 @@ export function claudeModelCommand(
     description: 'Show or switch the active Claude model',
     usage: '/claude_model [model_name]',
     aliases: ['model'],
+    args: [{ name: 'model', description: 'Model name to switch to', required: false }],
     permission: 'admin',
     async execute(ctx): Promise<CommandResult> {
       if (ctx.args.length === 0 || !ctx.args[0]) {

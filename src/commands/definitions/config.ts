@@ -13,6 +13,10 @@ export function configSetCommand(
     description: 'Set a runtime configuration value',
     usage: '/config_set <key> <value>',
     aliases: [],
+    args: [
+      { name: 'key', description: 'Configuration key', required: true },
+      { name: 'value', description: 'Value to set', required: true }
+    ],
     permission: 'admin',
     async execute(ctx): Promise<CommandResult> {
       const key = ctx.args[0]
@@ -42,6 +46,7 @@ export function configGetCommand(
     description: 'Show current configuration values',
     usage: '/config_get [key]',
     aliases: [],
+    args: [{ name: 'key', description: 'Configuration key', required: false }],
     permission: 'admin',
     async execute(ctx): Promise<CommandResult> {
       const key = ctx.args[0]

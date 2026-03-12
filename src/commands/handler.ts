@@ -72,12 +72,19 @@ export class CommandHandler {
    *  - `/session_new`         → "session_new"  (Telegram style)
    *  - `/session new`         → "session_new"  (two-word fallback)
    */
+  /**
+   * Strips Telegram @bot suffix from the first token only.
+   * `/session_select@mybot 13bb` → `session_select 13bb`
+   * `/session@mybot select 13bb` → `session select 13bb`
+   * Preserves @ in arguments: `/ask how is @user` stays intact.
+   */
+  private stripMention(withoutSlash: string): string {
+    return withoutSlash.replace(/^(\S+?)@\S+/, '$1')
+  }
+
   private extractCommandName(text: string): string {
-    // Drop the leading slash
     const withoutSlash = text.slice(1)
-    // Handle Telegram @bot suffix (e.g. /help@my_bot)
-    const withoutMention = withoutSlash.split('@')[0] ?? withoutSlash
-    // Take the first whitespace-separated token as the base name
+    const withoutMention = this.stripMention(withoutSlash)
     const parts = withoutMention.split(/\s+/)
     const first = parts[0]?.toLowerCase() ?? ''
 
@@ -99,7 +106,8 @@ export class CommandHandler {
    */
   private extractRawArgs(text: string): string {
     const withoutSlash = text.slice(1)
-    const parts = withoutSlash.split(/\s+/)
+    const withoutMention = this.stripMention(withoutSlash)
+    const parts = withoutMention.split(/\s+/)
     const first = parts[0]?.toLowerCase() ?? ''
 
     if (this.registry.has(first)) {

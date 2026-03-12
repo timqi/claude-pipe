@@ -57,6 +57,7 @@ export class CommandRegistry {
         description: cmd.description,
         category: cmd.category,
         ...(group ? { group } : {}),
+        ...(cmd.args?.length ? { args: cmd.args } : {}),
         telegramName: cmd.name
       }
     })

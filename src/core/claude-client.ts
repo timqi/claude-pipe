@@ -419,6 +419,17 @@ export class ClaudeClient implements ModelClient {
       })
     }
 
+    // Intentional cancellation via /stop — return empty to suppress duplicate response
+    if (exit.signal === 'SIGTERM') {
+      this.logger.info('claude.cancelled', { conversationKey, signal: exit.signal })
+      await this.publishUpdate(context, {
+        kind: 'turn_finished',
+        conversationKey,
+        message: 'Turn cancelled'
+      })
+      return ''
+    }
+
     const failed =
       resultIsError || (exit.code !== 0 && exit.code !== null) || exit.signal !== null
     if (failed) {

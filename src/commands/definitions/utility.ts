@@ -13,6 +13,7 @@ export function helpCommand(registry: CommandRegistry): CommandDefinition {
     description: 'Show available commands or help for a specific command',
     usage: '/help [command]',
     aliases: [],
+    args: [{ name: 'command', description: 'Command name', required: false }],
     permission: 'user',
     async execute(ctx): Promise<CommandResult> {
       if (ctx.args.length > 0 && ctx.args[0]) {

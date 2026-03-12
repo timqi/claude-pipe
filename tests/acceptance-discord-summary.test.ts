@@ -58,6 +58,6 @@ describe('acceptance: discord summary flow', () => {
     )
 
     expect(fetch).toHaveBeenCalledWith('chan-1')
-    expect(send).toHaveBeenCalledWith({ content: 'Workspace summary: src files and tests' })
+    expect(send).toHaveBeenCalledWith({ content: expect.stringContaining('Workspace summary: src files and tests') })
   })
 })

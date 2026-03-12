@@ -54,7 +54,7 @@ export function setupCommands(
 
   // --- Session commands ---
   registry.register(sessionNewCommand((key) => claude.startNewSession(key)))
-  registry.register(sessionListCommand(getWorkspace, claudeSessionService))
+  registry.register(sessionListCommand(getWorkspace, claudeSessionService, (key) => sessionStore.get(key)?.sessionId))
   registry.register(
     sessionSelectCommand(getWorkspace, claudeSessionService, (key, sessionId) =>
       sessionStore.set(key, sessionId)

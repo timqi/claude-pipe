@@ -63,9 +63,31 @@ export class AgentLoop {
     this.running = true
     this.logger.info('agent.start', { model: this.config.model })
 
+    let activeTurn: Promise<void> | null = null
+
     while (this.running) {
       const inbound = await this.bus.consumeInbound()
-      await this.processMessage(inbound)
+
+      // Commands are always processed immediately, even during a turn.
+      // This is critical for /stop to cancel an in-progress turn.
+      const cmdResult = await this.tryCommand(inbound)
+      if (cmdResult) continue
+
+      // Wait for any active turn to finish before starting a new one
+      if (activeTurn) {
+        await activeTurn
+      }
+
+      // Start the turn without blocking — allows commands to be consumed during the turn
+      activeTurn = this.processMessage(inbound).catch((error: unknown) => {
+        this.logger.error('agent.turn_error', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      })
+    }
+
+    if (activeTurn) {
+      await activeTurn
     }
   }
 
@@ -76,7 +98,10 @@ export class AgentLoop {
    */
   async processOnce(): Promise<void> {
     const inbound = await this.bus.consumeInbound()
-    await this.processMessage(inbound)
+    const handled = await this.tryCommand(inbound)
+    if (!handled) {
+      await this.processMessage(inbound)
+    }
   }
 
   /** Stops the loop and closes live Claude sessions. */
@@ -85,30 +110,34 @@ export class AgentLoop {
     this.client.closeAll()
   }
 
+  /** Tries to handle the message as a command. Returns true if handled. */
+  private async tryCommand(inbound: InboundMessage): Promise<boolean> {
+    if (!this.commandHandler) return false
+    const result = await this.commandHandler.execute(
+      inbound.content,
+      inbound.channel,
+      inbound.chatId,
+      inbound.senderId
+    )
+    if (!result) return false
+    await this.bus.publishOutbound({
+      channel: inbound.channel,
+      chatId: inbound.chatId,
+      content: result.content
+    })
+    this.logger.info('agent.command', {
+      conversationKey: `${inbound.channel}:${inbound.chatId}`,
+      content: inbound.content
+    })
+    return true
+  }
+
   private async processMessage(inbound: InboundMessage): Promise<void> {
     const conversationKey = `${inbound.channel}:${inbound.chatId}`
     this.logger.info('agent.inbound', {
       conversationKey,
       senderId: inbound.senderId
     })
-
-    if (this.commandHandler) {
-      const result = await this.commandHandler.execute(
-        inbound.content,
-        inbound.channel,
-        inbound.chatId,
-        inbound.senderId
-      )
-      if (result) {
-        await this.bus.publishOutbound({
-          channel: inbound.channel,
-          chatId: inbound.chatId,
-          content: result.content
-        })
-        this.logger.info('agent.command', { conversationKey, content: inbound.content })
-        return
-      }
-    }
 
     const workspace = resolveWorkspace(this.config, conversationKey)
 
@@ -143,6 +172,26 @@ export class AgentLoop {
     }
 
     const publishProgress = async (update: AgentTurnUpdate): Promise<void> => {
+      if (update.kind === 'turn_started') {
+        if (!this.channelManager) return
+        lastBaseContent = '🤖 Starting Claude...'
+        const statusText = lastBaseContent + statusFooter(inbound.channel, false)
+        try {
+          const sent = await this.channelManager.sendDirect({
+            channel: inbound.channel,
+            chatId: inbound.chatId,
+            content: statusText
+          })
+          if (sent) {
+            statusMessage = sent
+            startHeartbeat()
+          }
+        } catch {
+          // Non-critical — initial status failed
+        }
+        return
+      }
+
       if (update.kind === 'text_streaming') {
         if (!this.channelManager || !update.text) return
 
@@ -259,6 +308,12 @@ export class AgentLoop {
       })
     } finally {
       stopHeartbeat()
+    }
+
+    // Turn was cancelled or produced no output — skip publishing
+    if (!rawContent) {
+      this.logger.info('agent.cancelled', { conversationKey })
+      return
     }
 
     // Extract file attachment markers from the response: [[file:/path/to/file.ext]] or [[file:/path|caption]]

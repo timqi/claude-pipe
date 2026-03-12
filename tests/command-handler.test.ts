@@ -127,6 +127,52 @@ describe('CommandHandler', () => {
     expect(result).toEqual({ content: 'pong' })
   })
 
+  it('routes /session select to session_select with correct args', async () => {
+    let captured: { args: string[]; rawArgs: string } | undefined
+    const execute = vi.fn(async (ctx) => {
+      captured = { args: ctx.args, rawArgs: ctx.rawArgs }
+      return { content: 'selected' }
+    })
+    const handler = setup([
+      makeCommand({
+        name: 'session_select',
+        aliases: ['select', 'switch', 'resume'],
+        execute
+      })
+    ])
+
+    const result = await handler.execute('/session select abc12345', 'telegram', '42', 'u1')
+    expect(result).toEqual({ content: 'selected' })
+    expect(captured?.args).toEqual(['abc12345'])
+    expect(captured?.rawArgs).toBe('abc12345')
+  })
+
+  it('strips @bot mention and preserves args for single-token commands', async () => {
+    let captured: { args: string[]; rawArgs: string } | undefined
+    const execute = vi.fn(async (ctx) => {
+      captured = { args: ctx.args, rawArgs: ctx.rawArgs }
+      return { content: 'ok' }
+    })
+    const handler = setup([makeCommand({ name: 'session_select', execute })])
+
+    await handler.execute('/session_select@mybot 13bbf2f6', 'telegram', '42', 'u1')
+    expect(captured?.args).toEqual(['13bbf2f6'])
+    expect(captured?.rawArgs).toBe('13bbf2f6')
+  })
+
+  it('strips @bot mention and preserves args for two-word collapsed commands', async () => {
+    let captured: { args: string[]; rawArgs: string } | undefined
+    const execute = vi.fn(async (ctx) => {
+      captured = { args: ctx.args, rawArgs: ctx.rawArgs }
+      return { content: 'ok' }
+    })
+    const handler = setup([makeCommand({ name: 'session_select', execute })])
+
+    await handler.execute('/session@mybot select 13bbf2f6', 'telegram', '42', 'u1')
+    expect(captured?.args).toEqual(['13bbf2f6'])
+    expect(captured?.rawArgs).toBe('13bbf2f6')
+  })
+
   it('isCommand returns true for known commands', () => {
     const handler = setup([makeCommand({ name: 'ping' })])
     expect(handler.isCommand('/ping')).toBe(true)

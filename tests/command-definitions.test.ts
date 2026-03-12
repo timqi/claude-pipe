@@ -66,7 +66,7 @@ describe('Session commands', () => {
   })
 
   it('/session_list returns workspace session listing', async () => {
-    const cmd = sessionListCommand(getWorkspace, mockSessionService())
+    const cmd = sessionListCommand(getWorkspace, mockSessionService(), () => undefined)
 
     const result = await cmd.execute(makeCtx())
     expect(result.content).toContain('Sessions in /tmp/workspace (1)')
@@ -74,8 +74,15 @@ describe('Session commands', () => {
     expect(result.content).toContain('fix the login bug')
   })
 
+  it('/session_list marks the active session', async () => {
+    const cmd = sessionListCommand(getWorkspace, mockSessionService(), () => sampleSession.sessionId)
+
+    const result = await cmd.execute(makeCtx())
+    expect(result.content).toContain('`abcdef12` *')
+  })
+
   it('/session_list returns empty message when no sessions', async () => {
-    const cmd = sessionListCommand(getWorkspace, mockSessionService([]))
+    const cmd = sessionListCommand(getWorkspace, mockSessionService([]), () => undefined)
     const result = await cmd.execute(makeCtx())
     expect(result.content).toBe('No sessions found for this workspace.')
   })

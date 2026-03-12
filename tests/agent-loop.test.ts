@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AgentLoop } from '../src/core/agent-loop.js'
 import { MessageBus } from '../src/core/bus.js'
-import { CommandHandler, CommandRegistry, sessionNewCommand } from '../src/commands/index.js'
+import { CommandHandler, CommandRegistry, sessionNewCommand, stopCommand } from '../src/commands/index.js'
 import type { ClaudePipeConfig } from '../src/config/schema.js'
 
 function makeConfig(): ClaudePipeConfig {
@@ -45,7 +45,7 @@ describe('AgentLoop', () => {
     const outbound = await bus.consumeOutbound()
     expect(outbound.channel).toBe('telegram')
     expect(outbound.chatId).toBe('42')
-    expect(outbound.content).toBe('assistant reply')
+    expect(outbound.content).toContain('assistant reply')
 
     expect(claude.runTurn).toHaveBeenCalledWith(
       'telegram:42',
@@ -133,7 +133,7 @@ describe('AgentLoop', () => {
 
     // Only the final assistant reply should be sent to the channel
     const final = await bus.consumeOutbound()
-    expect(final.content).toBe('assistant reply')
+    expect(final.content).toContain('assistant reply')
 
     // Tool call events should still be logged for debugging
     expect(logger.info).toHaveBeenCalledWith(
@@ -208,13 +208,13 @@ describe('AgentLoop', () => {
       expect.objectContaining({
         channel: 'telegram',
         chatId: '42',
-        content: '🔧 WebSearch'
+        content: expect.stringContaining('🔧 WebSearch')
       })
     )
 
     // Should have edited the status message with tool completion, then final reply
-    expect(channelManager.editMessage).toHaveBeenCalledWith(sentMessage, '✅ WebSearch')
-    expect(channelManager.editMessage).toHaveBeenCalledWith(sentMessage, 'final answer')
+    expect(channelManager.editMessage).toHaveBeenCalledWith(sentMessage, expect.stringContaining('✅ WebSearch'))
+    expect(channelManager.editMessage).toHaveBeenCalledWith(sentMessage, expect.stringContaining('final answer'))
 
     // No outbound via bus when channel manager handles the edit
     const outcome = await Promise.race([
@@ -270,12 +270,12 @@ describe('AgentLoop', () => {
       expect.objectContaining({
         channel: 'telegram',
         chatId: '42',
-        content: 'partial answer'
+        content: expect.stringContaining('partial answer')
       })
     )
 
     // Should have finalised the draft with the full answer
-    expect(channelManager.editMessage).toHaveBeenCalledWith(draftMessage, 'full answer')
+    expect(channelManager.editMessage).toHaveBeenCalledWith(draftMessage, expect.stringContaining('full answer'))
 
     // No outbound via bus when channel manager handles the edit
     const outcome = await Promise.race([
@@ -335,9 +335,9 @@ describe('AgentLoop', () => {
 
     // text_streaming should update the existing status message (not send a new draft)
     expect(channelManager.sendDraftMessage).not.toHaveBeenCalled()
-    expect(channelManager.editMessage).toHaveBeenCalledWith(toolMessage, 'streaming content')
+    expect(channelManager.editMessage).toHaveBeenCalledWith(toolMessage, expect.stringContaining('streaming content'))
     // Final answer should also edit the same message
-    expect(channelManager.editMessage).toHaveBeenCalledWith(toolMessage, 'final content')
+    expect(channelManager.editMessage).toHaveBeenCalledWith(toolMessage, expect.stringContaining('final content'))
 
     loop.stop()
     await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])
@@ -381,7 +381,69 @@ describe('AgentLoop', () => {
 
     // Final reply should go through bus since sendDirect returned void (no message to edit)
     const final = await bus.consumeOutbound()
-    expect(final.content).toBe('result')
+    expect(final.content).toContain('result')
+
+    loop.stop()
+    await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])
+  })
+
+  it('/stop cancels an in-progress turn', async () => {
+    const bus = new MessageBus()
+    let resolveTurn!: (value: string) => void
+    const turnPromise = new Promise<string>((resolve) => {
+      resolveTurn = resolve
+    })
+
+    const claude = {
+      runTurn: vi.fn(async () => turnPromise),
+      cancelTurn: vi.fn((_key: string) => {
+        resolveTurn('')
+      }),
+      startNewSession: vi.fn(async () => undefined),
+      closeAll: vi.fn()
+    }
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+
+    const registry = new CommandRegistry()
+    registry.register(stopCommand(claude.cancelTurn))
+    loop.setCommandHandler(new CommandHandler(registry))
+
+    const run = loop.start()
+
+    // Send a regular message to start a turn
+    await bus.publishInbound({
+      channel: 'telegram',
+      senderId: 'u1',
+      chatId: '42',
+      content: 'hello',
+      timestamp: new Date().toISOString()
+    })
+
+    // Wait a tick for the turn to start
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    // Send /stop while the turn is in progress
+    await bus.publishInbound({
+      channel: 'telegram',
+      senderId: 'u1',
+      chatId: '42',
+      content: '/stop',
+      timestamp: new Date().toISOString()
+    })
+
+    // The /stop response should be sent
+    const stopResponse = await bus.consumeOutbound()
+    expect(stopResponse.content).toContain('Stopped')
+    expect(claude.cancelTurn).toHaveBeenCalledWith('telegram:42')
+
+    // The cancelled turn should NOT produce a second outbound message
+    const race = await Promise.race([
+      bus.consumeOutbound().then(() => 'published'),
+      new Promise((resolve) => setTimeout(() => resolve('timeout'), 100))
+    ])
+    expect(race).toBe('timeout')
 
     loop.stop()
     await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])

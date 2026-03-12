@@ -173,17 +173,24 @@ export class DiscordChannel implements Channel {
     }
   }
 
-  /** Edits a previously sent Discord message. */
+  /** Edits a previously sent Discord message, sending overflow as new messages. */
   async editMessage(sent: SentMessage, newContent: string): Promise<void> {
     if (!this.client || !this.config.channels.discord.enabled) return
 
     const channel = await this.client.channels.fetch(sent.chatId)
     if (!channel || !channel.isTextBased()) return
 
+    const chunks = chunkText(newContent, DISCORD_MESSAGE_MAX)
     try {
       if ('messages' in channel && channel.messages) {
         const msg = await channel.messages.fetch(sent.messageId)
-        await msg.edit({ content: newContent })
+        await msg.edit({ content: chunks[0] ?? newContent })
+      }
+      // Send remaining chunks as new messages
+      if ('send' in channel && typeof channel.send === 'function') {
+        for (let i = 1; i < chunks.length; i++) {
+          await channel.send({ content: chunks[i]! })
+        }
       }
     } catch (error) {
       this.logger.error('channel.discord.edit_failed', {
@@ -293,8 +300,16 @@ export class DiscordChannel implements Channel {
       ? `/${interaction.commandName}_${subcommand}`
       : `/${interaction.commandName}`
 
-    const promptOption = interaction.options.getString('prompt')
-    const content = promptOption ? `${commandName} ${promptOption}` : commandName
+    // Collect all option values — subcommand options are nested under data[0].options
+    const rawOpts = subcommand
+      ? (interaction.options.data[0]?.options ?? [])
+      : interaction.options.data
+    const argValues = rawOpts
+      .filter((o) => o.value !== undefined)
+      .map((o) => String(o.value))
+    const content = argValues.length > 0
+      ? `${commandName} ${argValues.join(' ')}`
+      : commandName
 
     await interaction.deferReply()
     this.pendingInteractions.set(interaction.channelId, interaction)
@@ -346,11 +361,23 @@ export class DiscordChannel implements Channel {
 
     const body: Array<Record<string, unknown>> = []
 
+    const buildOptions = (args?: Array<{ name: string; description: string; required?: boolean }>) =>
+      args?.length
+        ? args.map((arg) => ({
+            type: 3, // STRING
+            name: arg.name,
+            description: arg.description,
+            required: arg.required ?? true
+          }))
+        : undefined
+
     // Standalone commands (e.g. /help, /ping)
     for (const cmd of standalone) {
+      const options = buildOptions(cmd.args)
       body.push({
         name: cmd.name,
-        description: cmd.description
+        description: cmd.description,
+        ...(options ? { options } : {})
       })
     }
 
@@ -359,11 +386,15 @@ export class DiscordChannel implements Channel {
       body.push({
         name: group,
         description: `${group.charAt(0).toUpperCase() + group.slice(1)} commands`,
-        options: cmds.map((cmd) => ({
-          type: 1, // SUB_COMMAND
-          name: cmd.name,
-          description: cmd.description
-        }))
+        options: cmds.map((cmd) => {
+          const subOpts = buildOptions(cmd.args)
+          return {
+            type: 1, // SUB_COMMAND
+            name: cmd.name,
+            description: cmd.description,
+            ...(subOpts ? { options: subOpts } : {})
+          }
+        })
       })
     }
 

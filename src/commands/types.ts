@@ -26,6 +26,13 @@ export interface CommandResult {
   error?: boolean
 }
 
+/** Describes a positional argument for a command. */
+export interface CommandArg {
+  name: string
+  description: string
+  required?: boolean
+}
+
 /**
  * Definition of a single bot command.
  */
@@ -40,6 +47,8 @@ export interface CommandDefinition {
   usage?: string
   /** Alternative names that also trigger this command. */
   aliases?: string[]
+  /** Positional arguments for Discord slash command registration. */
+  args?: CommandArg[]
   /** Minimum permission level required. */
   permission: PermissionLevel
   /** Execute the command and return a result. */
@@ -56,6 +65,8 @@ export interface CommandMeta {
   category: CommandCategory
   /** Discord-style subcommand group (e.g. "session" for /session new). */
   group?: string
+  /** Positional arguments for Discord slash command options. */
+  args?: CommandArg[]
   /** Telegram-style command name with underscores (e.g. "session_new"). */
   telegramName: string
 }
