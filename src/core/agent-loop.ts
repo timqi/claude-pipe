@@ -347,9 +347,15 @@ export class AgentLoop {
       stopHeartbeat()
     }
 
-    // Turn was cancelled or produced no output — skip publishing
+    // Turn was cancelled or produced no output — update status and skip publishing
     if (!rawContent) {
       this.logger.info('agent.cancelled', { conversationKey })
+      const tracked = streamMessage ?? statusMessage
+      if (tracked && this.channelManager) {
+        const interrupted = (lastStreamedText || lastBaseContent || '⚠️ Interrupted')
+          + statusFooter(inbound.channel, true)
+        await this.channelManager.editMessage(tracked, interrupted).catch(() => {})
+      }
       return
     }
 
