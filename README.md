@@ -167,19 +167,29 @@ Configuration is stored in `~/.claude-pipe/settings.json` and created by the onb
 
 #### Per-channel workspaces
 
-You can map different channels/chats to different project directories:
+You can map different channels/chats to different project directories so the bot works on different codebases depending on where the message comes from.
+
+**Step 1: Find your chat ID**
+
+- **Discord**: Open Discord Settings → Advanced → enable **Developer Mode**. Then right-click any channel and select **Copy Channel ID**.
+- **Telegram**: Send a message to your bot, then check the claude-pipe logs for `agent.inbound` — the `chatId` field is your chat ID.
+- **Either platform**: Send `/session_info` in the chat — the conversation key shown (e.g. `discord:1481458060009541692`) contains the chat ID after the colon.
+
+**Step 2: Add `channelWorkspaces` to `~/.claude-pipe/settings.json`**
 
 ```json
 {
   "workspace": "/default/project",
   "channelWorkspaces": {
-    "discord:123456": "/path/to/project-a",
-    "telegram:789012": "/path/to/project-b"
+    "discord:110372368532684800": "/home/user/projects/project-a",
+    "telegram:123456789": "/home/user/projects/project-b"
   }
 }
 ```
 
-Keys use the format `channel:chatId` (e.g. `discord:123456`, `telegram:789012`). Unmapped channels fall back to the global `workspace`.
+Keys use the format `channel:chatId`. Unmapped channels fall back to the global `workspace`.
+
+**Step 3: Restart claude-pipe** for the changes to take effect.
 
 ### Advanced configuration
 
