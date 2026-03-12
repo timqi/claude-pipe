@@ -26,6 +26,12 @@ export interface Settings {
   /** Maps conversation keys (e.g. "discord:123", "telegram:456") to workspace paths. */
   channelWorkspaces?: Record<string, string>
   personality?: PersonalitySettings
+  transcriptLog?: {
+    enabled?: boolean
+    path?: string
+    maxBytes?: number
+    maxFiles?: number
+  }
   env?: Record<string, string>
 }
 
