@@ -441,6 +441,9 @@ export async function runOnboarding(existingSettings?: Settings): Promise<Settin
       allowFrom: existingSettings?.allowFrom ?? [],
       model,
       workspace,
+      ...(existingSettings?.channelWorkspaces
+        ? { channelWorkspaces: existingSettings.channelWorkspaces }
+        : {}),
       personality
     }
 

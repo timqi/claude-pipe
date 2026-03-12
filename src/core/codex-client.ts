@@ -179,7 +179,7 @@ export class CodexClient implements ModelClient {
     await this.transcript.log(conversationKey, { type: 'user', text: userText })
 
     const child = spawn(this.runtime.command, this.runtime.args, {
-      cwd: this.config.workspace,
+      cwd: context.workspace,
       env
     })
 

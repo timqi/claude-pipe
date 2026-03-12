@@ -167,7 +167,7 @@ export class ClaudeClient implements ModelClient {
     await this.transcript.log(conversationKey, { type: 'user', text: userText })
 
     const child = spawn(executable, args, {
-      cwd: this.config.workspace,
+      cwd: context.workspace,
       env: process.env
     })
     this.activeChildren.set(conversationKey, child)

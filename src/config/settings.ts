@@ -23,6 +23,8 @@ export interface Settings {
   allowChannels?: string[]
   model: string
   workspace: string
+  /** Maps conversation keys (e.g. "discord:123", "telegram:456") to workspace paths. */
+  channelWorkspaces?: Record<string, string>
   personality?: PersonalitySettings
   env?: Record<string, string>
 }

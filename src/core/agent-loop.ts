@@ -5,6 +5,7 @@ import { applySummaryTemplate } from './prompt-template.js'
 import { MessageBus } from './bus.js'
 import type { ModelClient } from './model-client.js'
 import type { AgentTurnUpdate, FileAttachment, InboundMessage, Logger, SentMessage } from './types.js'
+import { resolveWorkspace } from './workspace.js'
 
 /**
  * Central message-processing loop.
@@ -90,10 +91,12 @@ export class AgentLoop {
       }
     }
 
+    const workspace = resolveWorkspace(this.config, conversationKey)
+
     const modelInput = applySummaryTemplate(
       inbound.content,
       this.config.summaryPrompt,
-      this.config.workspace
+      workspace
     )
 
     let statusMessage: SentMessage | null = null
@@ -191,7 +194,7 @@ export class AgentLoop {
     }
 
     const rawContent = await this.client.runTurn(conversationKey, modelInput, {
-      workspace: this.config.workspace,
+      workspace,
       channel: inbound.channel,
       chatId: inbound.chatId,
       onUpdate: publishProgress

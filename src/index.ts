@@ -1,7 +1,10 @@
+import { existsSync, copyFileSync } from 'node:fs'
+import * as path from 'node:path'
+
 import { ChannelManager } from './channels/manager.js'
 import { setupCommands } from './commands/index.js'
 import { loadConfig } from './config/load.js'
-import { readSettings, settingsExist } from './config/settings.js'
+import { getConfigDir, readSettings, settingsExist } from './config/settings.js'
 import { AgentLoop } from './core/agent-loop.js'
 import { MessageBus } from './core/bus.js'
 import { createModelClient, resolveProviderFromConfig } from './core/client-factory.js'
@@ -65,6 +68,13 @@ async function main(): Promise<void> {
     setLoggerMuted(true)
   }
   const bus = new MessageBus()
+
+  // Migrate session store from legacy {workspace}/data/ to ~/.claude-pipe/
+  const legacySessionPath = path.join(config.workspace, 'data', 'sessions.json')
+  if (!existsSync(config.sessionStorePath) && existsSync(legacySessionPath)) {
+    copyFileSync(legacySessionPath, config.sessionStorePath)
+    logger.info('startup.session_migrated', { from: legacySessionPath, to: config.sessionStorePath })
+  }
 
   const sessionStore = new SessionStore(config.sessionStorePath)
   await sessionStore.init()

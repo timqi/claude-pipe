@@ -71,6 +71,8 @@ export function loadConfig(): ClaudePipeConfig {
     const discordEnabled = s.channel === 'discord'
     const cliEnabled = s.channel === 'cli'
 
+    const configDir = getConfigDir()
+
     return configSchema.parse({
       llmProvider,
       model: s.model,
@@ -79,6 +81,7 @@ export function loadConfig(): ClaudePipeConfig {
         args: s.claudeCli?.args ?? defaultClaudeArgs
       },
       workspace: s.workspace,
+      channelWorkspaces: s.channelWorkspaces,
       channels: {
         telegram: {
           enabled: telegramEnabled,
@@ -101,10 +104,18 @@ export function loadConfig(): ClaudePipeConfig {
         template: defaultSummaryTemplate
       },
       personality: s.personality,
-      sessionStorePath: `${s.workspace}/data/sessions.json`,
+      sessionStorePath: path.join(configDir, 'sessions.json'),
+      transcriptLog: {
+        enabled: false,
+        path: path.join(configDir, 'transcript.jsonl'),
+        maxBytes: 1_000_000,
+        maxFiles: 3
+      },
       maxToolIterations: 20
     })
   }
+
+  const configDir = getConfigDir()
 
   return configSchema.parse({
     llmProvider:
@@ -115,23 +126,23 @@ export function loadConfig(): ClaudePipeConfig {
       args: parseSpaceSeparatedArgs(process.env.CLAUDEPIPE_CLAUDE_ARGS) ?? defaultClaudeArgs
     },
     workspace: process.env.CLAUDEPIPE_WORKSPACE ?? process.cwd(),
-      channels: {
-        telegram: {
-          enabled: process.env.CLAUDEPIPE_TELEGRAM_ENABLED === 'true',
+    channels: {
+      telegram: {
+        enabled: process.env.CLAUDEPIPE_TELEGRAM_ENABLED === 'true',
         token: process.env.CLAUDEPIPE_TELEGRAM_TOKEN ?? '',
         allowFrom: parseCsv(process.env.CLAUDEPIPE_TELEGRAM_ALLOW_FROM)
       },
-        discord: {
-          enabled: process.env.CLAUDEPIPE_DISCORD_ENABLED === 'true',
-          token: process.env.CLAUDEPIPE_DISCORD_TOKEN ?? '',
-          allowFrom: parseCsv(process.env.CLAUDEPIPE_DISCORD_ALLOW_FROM),
-          allowChannels: parseCsv(process.env.CLAUDEPIPE_DISCORD_ALLOW_CHANNELS)
-        },
-        cli: {
-          enabled: process.env.CLAUDEPIPE_CLI_ENABLED === 'true',
-          allowFrom: parseCsv(process.env.CLAUDEPIPE_CLI_ALLOW_FROM)
-        }
+      discord: {
+        enabled: process.env.CLAUDEPIPE_DISCORD_ENABLED === 'true',
+        token: process.env.CLAUDEPIPE_DISCORD_TOKEN ?? '',
+        allowFrom: parseCsv(process.env.CLAUDEPIPE_DISCORD_ALLOW_FROM),
+        allowChannels: parseCsv(process.env.CLAUDEPIPE_DISCORD_ALLOW_CHANNELS)
       },
+      cli: {
+        enabled: process.env.CLAUDEPIPE_CLI_ENABLED === 'true',
+        allowFrom: parseCsv(process.env.CLAUDEPIPE_CLI_ALLOW_FROM)
+      }
+    },
     summaryPrompt: {
       enabled: process.env.CLAUDEPIPE_SUMMARY_PROMPT_ENABLED !== 'false',
       template: process.env.CLAUDEPIPE_SUMMARY_PROMPT_TEMPLATE ?? defaultSummaryTemplate
@@ -139,7 +150,7 @@ export function loadConfig(): ClaudePipeConfig {
     transcriptLog: {
       enabled: process.env.CLAUDEPIPE_TRANSCRIPT_LOG_ENABLED === 'true',
       path:
-        process.env.CLAUDEPIPE_TRANSCRIPT_LOG_PATH ?? `${process.cwd()}/data/transcript.jsonl`,
+        process.env.CLAUDEPIPE_TRANSCRIPT_LOG_PATH ?? path.join(configDir, 'transcript.jsonl'),
       maxBytes: process.env.CLAUDEPIPE_TRANSCRIPT_LOG_MAX_BYTES
         ? Number(process.env.CLAUDEPIPE_TRANSCRIPT_LOG_MAX_BYTES)
         : 1_000_000,
@@ -148,7 +159,7 @@ export function loadConfig(): ClaudePipeConfig {
         : 3
     },
     sessionStorePath:
-      process.env.CLAUDEPIPE_SESSION_STORE_PATH ?? `${process.cwd()}/data/sessions.json`,
+      process.env.CLAUDEPIPE_SESSION_STORE_PATH ?? path.join(configDir, 'sessions.json'),
     maxToolIterations: Number(process.env.CLAUDEPIPE_MAX_TOOL_ITERATIONS ?? 20)
   })
 }

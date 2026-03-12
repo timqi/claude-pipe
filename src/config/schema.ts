@@ -29,6 +29,7 @@ export const configSchema = z.object({
     })
     .optional(),
   workspace: z.string(),
+  channelWorkspaces: z.record(z.string()).optional(),
   channels: z.object({
     telegram: channelSchema,
     discord: discordChannelSchema,
@@ -61,7 +62,7 @@ export const configSchema = z.object({
     })
     .default({
       enabled: false,
-      path: `${process.cwd()}/data/transcript.jsonl`,
+      path: '',
       maxBytes: 1_000_000,
       maxFiles: 3
     }),

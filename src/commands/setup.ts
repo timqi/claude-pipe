@@ -2,6 +2,7 @@ import type { ClaudePipeConfig } from '../config/schema.js'
 import { loadConfig } from '../config/load.js'
 import type { ModelClient } from '../core/model-client.js'
 import type { SessionStore } from '../core/session-store.js'
+import { resolveWorkspace } from '../core/workspace.js'
 import {
   sessionNewCommand,
   sessionListCommand,
@@ -67,7 +68,7 @@ export function setupCommands(
   registry.register(
     claudeAskCommand(async (conversationKey, prompt, channel, chatId) =>
       claude.runTurn(conversationKey, prompt, {
-        workspace: config.workspace,
+        workspace: resolveWorkspace(config, conversationKey),
         channel,
         chatId
       })
