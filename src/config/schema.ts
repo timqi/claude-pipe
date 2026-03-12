@@ -29,7 +29,7 @@ export const configSchema = z.object({
     })
     .optional(),
   workspace: z.string(),
-  channelWorkspaces: z.record(z.string()).optional(),
+  channelWorkspaces: z.record(z.string(), z.string()).optional(),
   channels: z.object({
     telegram: channelSchema,
     discord: discordChannelSchema,
@@ -72,7 +72,7 @@ export const configSchema = z.object({
       traits: z.string()
     })
     .optional(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   sessionStorePath: z.string(),
   maxToolIterations: z.number().int().positive().default(20),
   heartbeat: z

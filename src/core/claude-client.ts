@@ -185,6 +185,7 @@ export class ClaudeClient implements ModelClient {
     let fallbackResultText = ''
     let observedSessionId = savedSession?.sessionId
     let resultIsError = false
+    let resultErrors: string[] = []
     const toolNamesByCallId = new Map<string, string>()
     let frameChain = Promise.resolve()
 
@@ -274,6 +275,9 @@ export class ClaudeClient implements ModelClient {
         resultIsError = frame.is_error === true
         if (typeof frame.result === 'string' && frame.result) {
           fallbackResultText = frame.result
+        }
+        if (Array.isArray(frame.errors)) {
+          resultErrors = frame.errors.filter((e): e is string => typeof e === 'string')
         }
       }
     }
@@ -378,6 +382,19 @@ export class ClaudeClient implements ModelClient {
     const failed =
       resultIsError || (exit.code !== 0 && exit.code !== null) || exit.signal !== null
     if (failed) {
+      // If resume failed because the session no longer exists, clear it and retry without --resume.
+      if (
+        savedSession?.sessionId &&
+        resultErrors.some((e) => e.includes('No conversation found with session ID'))
+      ) {
+        this.logger.warn('claude.stale_session', {
+          conversationKey,
+          sessionId: savedSession.sessionId
+        })
+        await this.store.clear(conversationKey)
+        return this.runTurn(conversationKey, userText, context)
+      }
+
       this.logger.error('claude.turn_failed', {
         conversationKey,
         exitCode: exit.code,

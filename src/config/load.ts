@@ -106,10 +106,10 @@ export function loadConfig(): ClaudePipeConfig {
       personality: s.personality,
       sessionStorePath: path.join(configDir, 'sessions.json'),
       transcriptLog: {
-        enabled: false,
-        path: path.join(configDir, 'transcript.jsonl'),
-        maxBytes: 1_000_000,
-        maxFiles: 3
+        enabled: s.transcriptLog?.enabled ?? false,
+        path: s.transcriptLog?.path ?? path.join(configDir, 'transcript.jsonl'),
+        maxBytes: s.transcriptLog?.maxBytes ?? 1_000_000,
+        maxFiles: s.transcriptLog?.maxFiles ?? 3
       },
       maxToolIterations: 20
     })
