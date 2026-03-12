@@ -34,7 +34,13 @@ function makeDeps(): CommandDependencies {
     init: vi.fn(async () => undefined)
   }
 
-  return { config, claude: claude as never, sessionStore: sessionStore as never }
+  const claudeSessionService = {
+    list: vi.fn(async () => []),
+    get: vi.fn(async () => undefined),
+    resolve: vi.fn(async () => ({ error: 'not found' }))
+  }
+
+  return { config, claude: claude as never, sessionStore: sessionStore as never, claudeSessionService }
 }
 
 describe('setupCommands', () => {
@@ -44,6 +50,7 @@ describe('setupCommands', () => {
     const names = registry.all().map((c) => c.name).sort()
     expect(names).toContain('session_new')
     expect(names).toContain('session_list')
+    expect(names).toContain('session_select')
     expect(names).toContain('session_info')
     expect(names).toContain('session_delete')
     expect(names).toContain('claude_ask')
@@ -83,23 +90,23 @@ describe('setupCommands', () => {
     const { handler } = setupCommands(makeDeps())
 
     // admin1 (from telegram allowFrom) can run admin commands
-    const result = await handler.execute('/session_list', 'telegram', '42', 'admin1')
+    const result = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'admin1')
     expect(result).not.toBeNull()
     expect(result?.error).toBeUndefined()
 
     // unknown user gets denied
-    const denied = await handler.execute('/session_list', 'telegram', '42', 'unknown')
+    const denied = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'unknown')
     expect(denied?.error).toBe(true)
   })
 
   it('accepts explicit admin IDs override', async () => {
     const { handler } = setupCommands(makeDeps(), { adminIds: ['custom-admin'] })
 
-    const result = await handler.execute('/session_list', 'telegram', '42', 'custom-admin')
+    const result = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'custom-admin')
     expect(result?.error).toBeUndefined()
 
     // Default allowFrom users no longer have admin
-    const denied = await handler.execute('/session_list', 'telegram', '42', 'admin1')
+    const denied = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'admin1')
     expect(denied?.error).toBe(true)
   })
 

@@ -1,11 +1,13 @@
 import type { ClaudePipeConfig } from '../config/schema.js'
 import { loadConfig } from '../config/load.js'
+import type { ClaudeSessionService } from '../core/claude-sessions.js'
 import type { ModelClient } from '../core/model-client.js'
 import type { SessionStore } from '../core/session-store.js'
 import { resolveWorkspace } from '../core/workspace.js'
 import {
   sessionNewCommand,
   sessionListCommand,
+  sessionSelectCommand,
   sessionInfoCommand,
   sessionDeleteCommand
 } from './definitions/session.js'
@@ -23,6 +25,7 @@ export interface CommandDependencies {
   config: ClaudePipeConfig
   claude: ModelClient
   sessionStore: SessionStore
+  claudeSessionService: ClaudeSessionService
 }
 
 /**
@@ -45,23 +48,21 @@ export function setupCommands(
   deps: CommandDependencies,
   options: SetupCommandsOptions = {}
 ): { registry: CommandRegistry; handler: CommandHandler } {
-  const { config, claude, sessionStore } = deps
+  const { config, claude, sessionStore, claudeSessionService } = deps
   const registry = new CommandRegistry()
+  const getWorkspace = (key: string): string => resolveWorkspace(config, key)
 
   // --- Session commands ---
   registry.register(sessionNewCommand((key) => claude.startNewSession(key)))
+  registry.register(sessionListCommand(getWorkspace, claudeSessionService))
   registry.register(
-    sessionListCommand(() => {
-      const map = sessionStore.entries()
-      const result: Array<{ key: string; updatedAt: string }> = []
-      for (const key of Object.keys(map)) {
-        const record = map[key]
-        if (record) result.push({ key, updatedAt: record.updatedAt })
-      }
-      return result
-    })
+    sessionSelectCommand(getWorkspace, claudeSessionService, (key, sessionId) =>
+      sessionStore.set(key, sessionId)
+    )
   )
-  registry.register(sessionInfoCommand((key) => sessionStore.get(key)))
+  registry.register(
+    sessionInfoCommand(getWorkspace, claudeSessionService, (key) => sessionStore.get(key)?.sessionId)
+  )
   registry.register(sessionDeleteCommand((key) => claude.startNewSession(key)))
 
   // --- Claude commands ---

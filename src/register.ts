@@ -2,6 +2,7 @@ import { DiscordChannel } from './channels/discord.js'
 import { setupCommands } from './commands/index.js'
 import { loadConfig } from './config/load.js'
 import { settingsExist } from './config/settings.js'
+import { createClaudeSessionService } from './core/claude-sessions.js'
 import { logger } from './core/logger.js'
 
 const applicationId = process.argv[2]
@@ -23,7 +24,7 @@ if (!config.channels.discord.enabled) {
   process.exit(1)
 }
 
-const { registry } = setupCommands({ config, claude: null!, sessionStore: null! })
+const { registry } = setupCommands({ config, claude: null!, sessionStore: null!, claudeSessionService: createClaudeSessionService() })
 
 await DiscordChannel.registerSlashCommands(
   config.channels.discord.token,

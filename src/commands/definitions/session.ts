@@ -1,4 +1,22 @@
+import type { ClaudeSessionService, ClaudeSessionSummary } from '../../core/claude-sessions.js'
 import type { CommandDefinition, CommandContext, CommandResult } from '../types.js'
+
+function formatSessionInfo(session: ClaudeSessionSummary): string {
+  const shortId = session.sessionId.slice(0, 8)
+  const lines = [
+    `═══════════════════════════════`,
+    `✦ Session: ${shortId}`,
+    `═══════════════════════════════`,
+    `  "${session.firstMessage}"`,
+    `  Model: ${session.model || 'unknown'}`,
+    `  Messages: ${session.userMessageCount} user / ${session.assistantMessageCount} assistant`,
+    `  Last active: ${session.lastActive || 'unknown'}`,
+  ]
+  if (session.gitBranch) {
+    lines.push(`  Branch: ${session.gitBranch}`)
+  }
+  return lines.join('\n')
+}
 
 /**
  * /new  (aliases: /newsession, /new_session, /reset, /reset_session, /session_new)
@@ -23,36 +41,85 @@ export function sessionNewCommand(
 
 /**
  * /session_list
- * Lists active sessions.
+ * Lists Claude sessions in the current workspace.
  */
 export function sessionListCommand(
-  listSessions: () => Array<{ key: string; updatedAt: string }>
+  getWorkspace: (conversationKey: string) => string,
+  sessionService: ClaudeSessionService
 ): CommandDefinition {
   return {
     name: 'session_list',
     category: 'session',
-    description: 'List active sessions',
+    description: 'List Claude sessions in the current workspace',
     aliases: [],
-    permission: 'admin',
-    async execute(): Promise<CommandResult> {
-      const sessions = listSessions()
+    permission: 'user',
+    async execute(ctx: CommandContext): Promise<CommandResult> {
+      const workspace = getWorkspace(ctx.conversationKey)
+      const sessions = await sessionService.list(workspace)
       if (sessions.length === 0) {
-        return { content: 'No active sessions.' }
+        return { content: 'No sessions found for this workspace.' }
       }
-      const lines = sessions.map(
-        (s, i) => `${i + 1}. \`${s.key}\` — last active ${s.updatedAt}`
-      )
-      return { content: `**Active sessions (${sessions.length}):**\n${lines.join('\n')}` }
+      const cap = 20
+      const shown = sessions.slice(0, cap)
+      const lines = shown.map((s, i) => {
+        const shortId = s.sessionId.slice(0, 8)
+        const msg = s.firstMessage.length > 50 ? s.firstMessage.slice(0, 50) + '…' : s.firstMessage
+        const date = s.lastActive ? s.lastActive.slice(0, 10) : 'unknown'
+        return `${i + 1}. \`${shortId}\` — "${msg}" (${date})`
+      })
+      let header = `**Sessions in ${workspace} (${sessions.length}):**`
+      if (sessions.length > cap) {
+        header += ` (showing ${cap} most recent)`
+      }
+      return { content: `${header}\n${lines.join('\n')}` }
+    }
+  }
+}
+
+/**
+ * /session_select <session_id>
+ * Switch to a different Claude session by ID (prefix match supported).
+ */
+export function sessionSelectCommand(
+  getWorkspace: (conversationKey: string) => string,
+  sessionService: ClaudeSessionService,
+  setSession: (conversationKey: string, sessionId: string) => Promise<void>
+): CommandDefinition {
+  return {
+    name: 'session_select',
+    category: 'session',
+    description: 'Switch to a session by ID',
+    usage: '/session_select <id> — switch to a session (prefix match supported)',
+    aliases: ['select', 'switch', 'resume'],
+    permission: 'user',
+    async execute(ctx: CommandContext): Promise<CommandResult> {
+      const prefix = ctx.args[0]
+      if (!prefix) {
+        return { content: 'Usage: /session select <session_id>', error: true }
+      }
+      const workspace = getWorkspace(ctx.conversationKey)
+      const resolved = await sessionService.resolve(workspace, prefix)
+      if ('error' in resolved) {
+        return { content: resolved.error, error: true }
+      }
+      const session = await sessionService.get(workspace, resolved.id)
+      if (!session) {
+        return { content: 'Failed to read session details.', error: true }
+      }
+      await setSession(ctx.conversationKey, resolved.id)
+      return { content: formatSessionInfo(session) }
     }
   }
 }
 
 /**
  * /session_info
- * Shows info about the current chat's session.
+ * Shows detailed info about the current chat's session.
  */
 export function sessionInfoCommand(
-  getSession: (conversationKey: string) => { sessionId: string; updatedAt: string } | undefined
+  getWorkspace: (conversationKey: string) => string,
+  sessionService: ClaudeSessionService,
+  getSessionId: (conversationKey: string) => string | undefined
 ): CommandDefinition {
   return {
     name: 'session_info',
@@ -61,16 +128,16 @@ export function sessionInfoCommand(
     aliases: [],
     permission: 'user',
     async execute(ctx: CommandContext): Promise<CommandResult> {
-      const session = getSession(ctx.conversationKey)
-      if (!session) {
+      const sessionId = getSessionId(ctx.conversationKey)
+      if (!sessionId) {
         return { content: 'No active session for this chat.' }
       }
-      return {
-        content:
-          `**Session info:**\n` +
-          `• Session ID: \`${session.sessionId}\`\n` +
-          `• Last active: ${session.updatedAt}`
+      const workspace = getWorkspace(ctx.conversationKey)
+      const session = await sessionService.get(workspace, sessionId)
+      if (!session) {
+        return { content: `Session \`${sessionId.slice(0, 8)}\` exists in store but no JSONL file found.` }
       }
+      return { content: formatSessionInfo(session) }
     }
   }
 }

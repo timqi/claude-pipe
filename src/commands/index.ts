@@ -13,6 +13,7 @@ export type {
 export {
   sessionNewCommand,
   sessionListCommand,
+  sessionSelectCommand,
   sessionInfoCommand,
   sessionDeleteCommand,
   helpCommand,

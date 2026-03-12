@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   sessionNewCommand,
   sessionListCommand,
+  sessionSelectCommand,
   sessionInfoCommand,
   sessionDeleteCommand,
   helpCommand,
@@ -14,6 +15,7 @@ import {
   configGetCommand,
   CommandRegistry
 } from '../src/commands/index.js'
+import type { ClaudeSessionService, ClaudeSessionSummary } from '../src/core/claude-sessions.js'
 import type { CommandContext } from '../src/commands/types.js'
 
 function makeCtx(overrides?: Partial<CommandContext>): CommandContext {
@@ -28,6 +30,31 @@ function makeCtx(overrides?: Partial<CommandContext>): CommandContext {
   }
 }
 
+const sampleSession: ClaudeSessionSummary = {
+  sessionId: 'abcdef12-3456-7890-abcd-ef1234567890',
+  firstMessage: 'fix the login bug',
+  model: 'claude-opus-4-6',
+  lastActive: '2026-03-12T03:43:07.526Z',
+  gitBranch: 'main',
+  userMessageCount: 5,
+  assistantMessageCount: 30
+}
+
+function mockSessionService(sessions: ClaudeSessionSummary[] = [sampleSession]): ClaudeSessionService {
+  return {
+    list: vi.fn(async () => sessions),
+    get: vi.fn(async (_ws, id) => sessions.find((s) => s.sessionId === id || s.sessionId.startsWith(id))),
+    resolve: vi.fn(async (_ws, prefix) => {
+      const matches = sessions.filter((s) => s.sessionId.startsWith(prefix))
+      if (matches.length === 1) return { id: matches[0]!.sessionId }
+      if (matches.length === 0) return { error: `No session matching "${prefix}".` }
+      return { error: `Ambiguous prefix "${prefix}".` }
+    })
+  }
+}
+
+const getWorkspace = (): string => '/tmp/workspace'
+
 describe('Session commands', () => {
   it('/session_new calls startNewSession and returns confirmation', async () => {
     const startNew = vi.fn(async () => undefined)
@@ -38,35 +65,61 @@ describe('Session commands', () => {
     expect(startNew).toHaveBeenCalledWith('telegram:42')
   })
 
-  it('/session_list returns session listing', async () => {
-    const cmd = sessionListCommand(() => [
-      { key: 'telegram:42', updatedAt: '2025-01-01T00:00:00Z' }
-    ])
+  it('/session_list returns workspace session listing', async () => {
+    const cmd = sessionListCommand(getWorkspace, mockSessionService())
 
     const result = await cmd.execute(makeCtx())
-    expect(result.content).toContain('Active sessions (1)')
-    expect(result.content).toContain('telegram:42')
+    expect(result.content).toContain('Sessions in /tmp/workspace (1)')
+    expect(result.content).toContain('abcdef12')
+    expect(result.content).toContain('fix the login bug')
   })
 
   it('/session_list returns empty message when no sessions', async () => {
-    const cmd = sessionListCommand(() => [])
+    const cmd = sessionListCommand(getWorkspace, mockSessionService([]))
     const result = await cmd.execute(makeCtx())
-    expect(result.content).toBe('No active sessions.')
+    expect(result.content).toBe('No sessions found for this workspace.')
   })
 
-  it('/session_info returns session details', async () => {
-    const cmd = sessionInfoCommand(() => ({
-      sessionId: 'sess-abc',
-      updatedAt: '2025-01-01T00:00:00Z'
-    }))
+  it('/session_select switches session and shows info', async () => {
+    const setSession = vi.fn(async () => undefined)
+    const cmd = sessionSelectCommand(getWorkspace, mockSessionService(), setSession)
+
+    const result = await cmd.execute(makeCtx({ args: ['abcdef12'], rawArgs: 'abcdef12' }))
+    expect(result.content).toContain('Session: abcdef12')
+    expect(result.content).toContain('fix the login bug')
+    expect(setSession).toHaveBeenCalledWith('telegram:42', sampleSession.sessionId)
+  })
+
+  it('/session_select returns error for no match', async () => {
+    const cmd = sessionSelectCommand(getWorkspace, mockSessionService(), vi.fn())
+    const result = await cmd.execute(makeCtx({ args: ['zzz'], rawArgs: 'zzz' }))
+    expect(result.error).toBe(true)
+    expect(result.content).toContain('No session matching')
+  })
+
+  it('/session_select returns usage error with no args', async () => {
+    const cmd = sessionSelectCommand(getWorkspace, mockSessionService(), vi.fn())
+    const result = await cmd.execute(makeCtx())
+    expect(result.error).toBe(true)
+    expect(result.content).toContain('Usage')
+  })
+
+  it('/session_info returns detailed session info', async () => {
+    const cmd = sessionInfoCommand(
+      getWorkspace,
+      mockSessionService(),
+      () => sampleSession.sessionId
+    )
 
     const result = await cmd.execute(makeCtx())
-    expect(result.content).toContain('sess-abc')
-    expect(result.content).toContain('Session info')
+    expect(result.content).toContain('abcdef12')
+    expect(result.content).toContain('fix the login bug')
+    expect(result.content).toContain('claude-opus-4-6')
+    expect(result.content).toContain('5 user / 30 assistant')
   })
 
   it('/session_info returns no-session message', async () => {
-    const cmd = sessionInfoCommand(() => undefined)
+    const cmd = sessionInfoCommand(getWorkspace, mockSessionService(), () => undefined)
     const result = await cmd.execute(makeCtx())
     expect(result.content).toBe('No active session for this chat.')
   })
@@ -121,7 +174,8 @@ describe('Utility commands', () => {
     const cmd = statusCommand(() => ({
       model: 'claude-sonnet-4-5',
       workspace: '/tmp/test',
-      channels: ['telegram', 'discord']
+      channels: ['telegram', 'discord'],
+      sessions: []
     }))
 
     const result = await cmd.execute(makeCtx())
