@@ -7,7 +7,7 @@ function formatSessionInfo(session: ClaudeSessionSummary): string {
     `═══════════════════════════════`,
     `✦ Session: ${shortId}`,
     `═══════════════════════════════`,
-    `  "${session.firstMessage}"`,
+    `  "${session.lastMessage}"`,
     `  Model: ${session.model || 'unknown'}`,
     `  Messages: ${session.userMessageCount} user / ${session.assistantMessageCount} assistant`,
     `  Last active: ${session.lastActive || 'unknown'}`,
@@ -65,7 +65,7 @@ export function sessionListCommand(
       const shown = sessions.slice(0, cap)
       const lines = shown.map((s, i) => {
         const shortId = s.sessionId.slice(0, 8)
-        const msg = s.firstMessage.length > 50 ? s.firstMessage.slice(0, 50) + '…' : s.firstMessage
+        const msg = s.lastMessage.length > 50 ? s.lastMessage.slice(0, 50) + '…' : s.lastMessage
         const date = s.lastActive ? s.lastActive.slice(0, 10) : 'unknown'
         const active = currentSessionId === s.sessionId ? ' *' : ''
         return `${i + 1}. \`${shortId}\`${active} — "${msg}" (${date})`

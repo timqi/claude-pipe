@@ -1,10 +1,10 @@
-import { readdir, readFile, unlink } from 'node:fs/promises'
+import { readdir, readFile, stat, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 
 export interface ClaudeSessionSummary {
   sessionId: string
-  firstMessage: string
+  lastMessage: string
   model: string
   lastActive: string
   gitBranch: string
@@ -57,10 +57,10 @@ function extractTextFromContent(content: unknown): string | undefined {
   return undefined
 }
 
-function extractFirstUserMessage(lines: string[]): string {
-  for (const line of lines) {
+function extractLastUserMessage(lines: string[]): string {
+  for (let i = lines.length - 1; i >= 0; i--) {
     try {
-      const obj = JSON.parse(line)
+      const obj = JSON.parse(lines[i]!)
       if (obj.type !== 'user') continue
       const text = extractTextFromContent(obj.message?.content)
       if (text) return text
@@ -109,7 +109,7 @@ function parseSession(sessionId: string, raw: string): ClaudeSessionSummary {
 
   return {
     sessionId,
-    firstMessage: extractFirstUserMessage(lines),
+    lastMessage: extractLastUserMessage(lines),
     model,
     lastActive,
     gitBranch,
@@ -152,9 +152,23 @@ export function createClaudeSessionService(): ClaudeSessionService {
       } catch {
         return []
       }
-      const sessions: ClaudeSessionSummary[] = []
 
-      for (const file of files) {
+      // Sort by mtime (newest first) so we only parse the most recent files
+      const withMtime = await Promise.all(
+        files.map(async (f) => {
+          try {
+            const s = await stat(path.join(dir, f))
+            return { file: f, mtime: s.mtimeMs }
+          } catch {
+            return { file: f, mtime: 0 }
+          }
+        })
+      )
+      withMtime.sort((a, b) => b.mtime - a.mtime)
+      const recent = withMtime.slice(0, 20)
+
+      const sessions: ClaudeSessionSummary[] = []
+      for (const { file } of recent) {
         try {
           const raw = await readFile(path.join(dir, file), 'utf-8')
           const sessionId = file.replace(/\.jsonl$/, '')

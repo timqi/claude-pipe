@@ -89,7 +89,7 @@ export function statusCommand(
         const shortId = s.sessionId.slice(0, 8)
         lines.push('', '**Session:**')
         lines.push(`• ID: ${shortId}`)
-        lines.push(`• Topic: "${s.firstMessage}"`)
+        lines.push(`• Topic: "${s.lastMessage}"`)
         lines.push(`• Model: ${s.model || 'unknown'}`)
         lines.push(`• Messages: ${s.userMessageCount} user / ${s.assistantMessageCount} assistant`)
         lines.push(`• Last active: ${s.lastActive || 'unknown'}`)
