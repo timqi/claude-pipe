@@ -135,7 +135,8 @@ export class TelegramChannel implements Channel {
               body: JSON.stringify({
                 chat_id: Number(message.chatId),
                 text: part,
-                parse_mode: 'Markdown'
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
               })
             })
 
@@ -276,7 +277,8 @@ export class TelegramChannel implements Channel {
           chat_id: Number(chatId),
           draft_id: 1,
           text,
-          parse_mode: 'Markdown'
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
         })
       })
 
@@ -309,7 +311,8 @@ export class TelegramChannel implements Channel {
               chat_id: Number(sent.chatId),
               message_id: Number(sent.messageId),
               text: newContent,
-              parse_mode: 'Markdown'
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
             })
           })
 

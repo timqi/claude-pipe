@@ -6,6 +6,7 @@ import {
   REST,
   Routes,
   type ChatInputCommandInteraction,
+  MessageFlags,
   type Message
 } from 'discord.js'
 
@@ -142,12 +143,12 @@ export class DiscordChannel implements Channel {
             // Resolve the deferred interaction for the first chunk,
             // then fall back to channel.send() for subsequent chunks.
             if (isFirstChunk && pendingInteraction) {
-              const sent = await pendingInteraction.editReply({ content: part })
+              const sent = await pendingInteraction.editReply({ content: part, flags: MessageFlags.SuppressEmbeds })
               if (sent && typeof sent === 'object' && 'id' in sent) {
                 lastMessageId = String(sent.id)
               }
             } else {
-              const sent = await channel.send({ content: part })
+              const sent = await channel.send({ content: part, flags: MessageFlags.SuppressEmbeds })
               if (sent && typeof sent === 'object' && 'id' in sent) {
                 lastMessageId = String(sent.id)
               }
@@ -189,7 +190,7 @@ export class DiscordChannel implements Channel {
       // Send remaining chunks as new messages
       if ('send' in channel && typeof channel.send === 'function') {
         for (let i = 1; i < chunks.length; i++) {
-          await channel.send({ content: chunks[i]! })
+          await channel.send({ content: chunks[i]!, flags: MessageFlags.SuppressEmbeds })
         }
       }
     } catch (error) {
