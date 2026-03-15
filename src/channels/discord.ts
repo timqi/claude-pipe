@@ -276,7 +276,7 @@ export class DiscordChannel implements Channel {
    * Handles Discord slash-command interactions.
    *
    * Converts `/command subcommand ...options` into a text-based command string
-   * (e.g. `/session_new`) and publishes it as an inbound message so the
+   * (e.g. `/session_clear`) and publishes it as an inbound message so the
    * unified command handler in AgentLoop processes it.
    */
   private async onInteraction(interaction: ChatInputCommandInteraction): Promise<void> {

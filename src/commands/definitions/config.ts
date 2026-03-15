@@ -12,7 +12,6 @@ export function configSetCommand(
     category: 'config',
     description: 'Set a runtime configuration value',
     usage: '/config_set <key> <value>',
-    aliases: [],
     args: [
       { name: 'key', description: 'Configuration key', required: true },
       { name: 'value', description: 'Value to set', required: true }
@@ -45,7 +44,6 @@ export function configGetCommand(
     category: 'config',
     description: 'Show current configuration values',
     usage: '/config_get [key]',
-    aliases: [],
     args: [{ name: 'key', description: 'Configuration key', required: false }],
     permission: 'admin',
     async execute(ctx): Promise<CommandResult> {

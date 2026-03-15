@@ -9,7 +9,6 @@ function makeCommand(overrides?: Partial<CommandDefinition>): CommandDefinition 
     name: 'test',
     category: 'utility',
     description: 'A test command',
-    aliases: [],
     permission: 'user',
     async execute() {
       return { content: 'ok' }
@@ -53,19 +52,11 @@ describe('CommandHandler', () => {
     )
   })
 
-  it('matches commands via alias', async () => {
-    const execute = vi.fn(async () => ({ content: 'new session' }))
-    const handler = setup([makeCommand({ name: 'session_new', aliases: ['new'], execute })])
-
-    const result = await handler.execute('/new', 'discord', '42', 'u1')
-    expect(result).toEqual({ content: 'new session' })
-  })
-
   it('collapses Discord-style two-word commands', async () => {
     const execute = vi.fn(async () => ({ content: 'done' }))
-    const handler = setup([makeCommand({ name: 'session_new', execute })])
+    const handler = setup([makeCommand({ name: 'session_clear', execute })])
 
-    const result = await handler.execute('/session new', 'discord', '42', 'u1')
+    const result = await handler.execute('/session clear', 'discord', '42', 'u1')
     expect(result).toEqual({ content: 'done' })
   })
 
@@ -136,7 +127,6 @@ describe('CommandHandler', () => {
     const handler = setup([
       makeCommand({
         name: 'session_select',
-        aliases: ['select', 'switch', 'resume'],
         execute
       })
     ])

@@ -47,7 +47,7 @@ describe('setupCommands', () => {
     const { registry } = setupCommands(makeDeps())
 
     const names = registry.all().map((c) => c.name).sort()
-    expect(names).toContain('session_new')
+    expect(names).toContain('session_clear')
     expect(names).toContain('session_list')
     expect(names).toContain('session_select')
 
@@ -66,7 +66,6 @@ describe('setupCommands', () => {
       name: 'deploy',
       category: 'utility',
       description: 'Deploy to production',
-      aliases: ['ship'],
       permission: 'admin',
       async execute() {
         return { content: 'Deployed!' }
@@ -78,7 +77,6 @@ describe('setupCommands', () => {
     })
 
     expect(registry.has('deploy')).toBe(true)
-    expect(registry.has('ship')).toBe(true)
     // Custom command is visible in help
     expect(registry.all().find((c) => c.name === 'deploy')).toBeDefined()
     // Handler is functional
@@ -107,15 +105,6 @@ describe('setupCommands', () => {
     // Default allowFrom users no longer have admin
     const denied = await handler.execute('/config_set summaryPromptEnabled true', 'discord', '42', 'admin1')
     expect(denied?.error).toBe(true)
-  })
-
-  it('handler recognises aliases for built-in commands', () => {
-    const { handler } = setupCommands(makeDeps())
-
-    expect(handler.isCommand('/new')).toBe(true)
-    expect(handler.isCommand('/reset')).toBe(true)
-    expect(handler.isCommand('/ask')).toBe(true)
-    expect(handler.isCommand('/model')).toBe(true)
   })
 
   it('claude_ask command invokes claude.runTurn', async () => {

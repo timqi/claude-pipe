@@ -11,7 +11,7 @@ export type {
   PermissionLevel
 } from './types.js'
 export {
-  sessionNewCommand,
+  sessionClearCommand,
   sessionListCommand,
   sessionSelectCommand,
   sessionDeleteCommand,

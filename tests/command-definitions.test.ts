@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  sessionNewCommand,
+  sessionClearCommand,
   sessionListCommand,
   sessionSelectCommand,
 
@@ -32,7 +32,7 @@ function makeCtx(overrides?: Partial<CommandContext>): CommandContext {
 
 const sampleSession: ClaudeSessionSummary = {
   sessionId: 'abcdef12-3456-7890-abcd-ef1234567890',
-  firstMessage: 'fix the login bug',
+  recentContext: 'fix the login bug',
   model: 'claude-opus-4-6',
   lastActive: '2026-03-12T03:43:07.526Z',
   gitBranch: 'main',
@@ -57,9 +57,9 @@ function mockSessionService(sessions: ClaudeSessionSummary[] = [sampleSession]):
 const getWorkspace = (): string => '/tmp/workspace'
 
 describe('Session commands', () => {
-  it('/session_new calls startNewSession and returns confirmation', async () => {
+  it('/session_clear calls startNewSession and returns confirmation', async () => {
     const startNew = vi.fn(async () => undefined)
-    const cmd = sessionNewCommand(startNew)
+    const cmd = sessionClearCommand(startNew)
 
     const result = await cmd.execute(makeCtx())
     expect(result.content).toContain('New session started')

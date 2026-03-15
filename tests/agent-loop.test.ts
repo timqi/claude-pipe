@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AgentLoop } from '../src/core/agent-loop.js'
 import { MessageBus } from '../src/core/bus.js'
-import { CommandHandler, CommandRegistry, sessionNewCommand, stopCommand } from '../src/commands/index.js'
+import { CommandHandler, CommandRegistry, sessionClearCommand, stopCommand } from '../src/commands/index.js'
 import type { ClaudePipeConfig } from '../src/config/schema.js'
 
 function makeConfig(): ClaudePipeConfig {
@@ -60,7 +60,7 @@ describe('AgentLoop', () => {
     await Promise.race([run, new Promise((resolve) => setTimeout(resolve, 25))])
   })
 
-  it('starts a new session when receiving /new command', async () => {
+  it('starts a new session when receiving /session_clear command', async () => {
     const bus = new MessageBus()
     const claude = {
       runTurn: vi.fn(async () => 'assistant reply'),
@@ -72,7 +72,7 @@ describe('AgentLoop', () => {
     const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
 
     const registry = new CommandRegistry()
-    registry.register(sessionNewCommand(claude.startNewSession))
+    registry.register(sessionClearCommand(claude.startNewSession))
     loop.setCommandHandler(new CommandHandler(registry))
 
     const run = loop.start()
@@ -81,7 +81,7 @@ describe('AgentLoop', () => {
       channel: 'discord',
       senderId: 'u1',
       chatId: '42',
-      content: '/new',
+      content: '/session_clear',
       timestamp: new Date().toISOString()
     })
 

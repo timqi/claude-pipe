@@ -14,7 +14,6 @@ export function helpCommand(registry: CommandRegistry): CommandDefinition {
     category: 'utility',
     description: 'Show available commands or help for a specific command',
     usage: '/help [command]',
-    aliases: [],
     args: [{ name: 'command', description: 'Command name', required: false }],
     permission: 'user',
     async execute(ctx): Promise<CommandResult> {
@@ -26,9 +25,6 @@ export function helpCommand(registry: CommandRegistry): CommandDefinition {
         const lines = [
           `**/${target.name}** — ${target.description}`,
           ...(target.usage ? [`Usage: ${target.usage}`] : []),
-          ...(target.aliases && target.aliases.length > 0
-            ? [`Aliases: ${target.aliases.map((a) => `/${a}`).join(', ')}`]
-            : []),
           `Permission: ${target.permission}`
         ]
         return { content: lines.join('\n') }
@@ -71,7 +67,6 @@ export function statusCommand(
     name: 'status',
     category: 'utility',
     description: 'Show bot runtime status',
-    aliases: [],
     permission: 'user',
     async execute(ctx): Promise<CommandResult> {
       const status = await getStatus(ctx.conversationKey)
@@ -89,7 +84,7 @@ export function statusCommand(
         const shortId = s.sessionId.slice(0, 8)
         lines.push('', '**Session:**')
         lines.push(`• ID: ${shortId}`)
-        lines.push(`• Topic: "${s.lastMessage}"`)
+        lines.push(`• Topic: "${s.recentContext}"`)
         lines.push(`• Model: ${s.model || 'unknown'}`)
         lines.push(`• Messages: ${s.userMessageCount} user / ${s.assistantMessageCount} assistant`)
         lines.push(`• Last active: ${s.lastActive || 'unknown'}`)
@@ -128,7 +123,6 @@ export function reloadCommand(
     name: 'reload',
     category: 'utility',
     description: 'Reload configuration from disk',
-    aliases: [],
     permission: 'admin',
     async execute(): Promise<CommandResult> {
       try {
@@ -163,7 +157,6 @@ export function pingCommand(): CommandDefinition {
     name: 'ping',
     category: 'utility',
     description: 'Health check — replies with pong',
-    aliases: [],
     permission: 'user',
     async execute(): Promise<CommandResult> {
       return { content: 'pong 🏓' }
@@ -182,7 +175,6 @@ export function stopCommand(
     name: 'stop',
     category: 'utility',
     description: 'Cancel the in-progress Claude turn for this chat',
-    aliases: ['cancel'],
     permission: 'user',
     async execute(ctx): Promise<CommandResult> {
       cancelTurn(ctx.conversationKey)
@@ -200,7 +192,6 @@ export function restartCommand(): CommandDefinition {
     name: 'restart',
     category: 'utility',
     description: 'Restart the bot process',
-    aliases: [],
     permission: 'admin',
     async execute(): Promise<CommandResult> {
       setImmediate(() => process.exit(0))

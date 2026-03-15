@@ -106,7 +106,7 @@ describe('DiscordChannel', () => {
     const sent = await channel.send({ channel: 'discord', chatId: 'c1', content: 'reply' })
 
     expect(fetch).toHaveBeenCalledWith('c1')
-    expect(send).toHaveBeenCalledWith({ content: 'reply' })
+    expect(send).toHaveBeenCalledWith({ content: 'reply', flags: 4 })
     expect(sent).toEqual({ channel: 'discord', chatId: 'c1', messageId: 'msg-42' })
   })
 

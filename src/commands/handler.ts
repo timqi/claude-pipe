@@ -7,7 +7,7 @@ import type { CommandResult, PermissionLevel } from './types.js'
  * through the {@link CommandRegistry}.
  *
  * Supports both slash-style (`/help`) and platform-prefixed names
- * (`/session_new` or `/session new` on Discord).
+ * (`/session_clear` or `/session new` on Discord).
  */
 export class CommandHandler {
   constructor(
@@ -69,8 +69,8 @@ export class CommandHandler {
    *
    * Handles:
    *  - `/help`                → "help"
-   *  - `/session_new`         → "session_new"  (underscore style)
-   *  - `/session new`         → "session_new"  (two-word fallback)
+   *  - `/session_clear`         → "session_clear"  (underscore style)
+   *  - `/session new`         → "session_clear"  (two-word fallback)
    */
   /**
    * Strips @bot suffix from the first token only.
@@ -92,7 +92,7 @@ export class CommandHandler {
     if (this.registry.has(first)) return first
 
     // Otherwise try collapsing the first two tokens with underscore
-    // to support Discord-style `/session new` → "session_new"
+    // to support Discord-style `/session new` → "session_clear"
     if (parts.length >= 2 && parts[1]) {
       const collapsed = `${first}_${parts[1].toLowerCase()}`
       if (this.registry.has(collapsed)) return collapsed

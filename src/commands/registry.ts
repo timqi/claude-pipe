@@ -8,30 +8,20 @@ import type { CommandDefinition, CommandMeta } from './types.js'
  */
 export class CommandRegistry {
   private readonly commands = new Map<string, CommandDefinition>()
-  /** Maps every alias (and primary name) to the canonical name. */
-  private readonly aliasMap = new Map<string, string>()
 
-  /** Registers a command definition, indexing its name and aliases. */
+  /** Registers a command definition. */
   register(command: CommandDefinition): void {
-    const key = command.name.toLowerCase()
-    this.commands.set(key, command)
-    this.aliasMap.set(key, key)
-
-    for (const alias of command.aliases ?? []) {
-      this.aliasMap.set(alias.toLowerCase(), key)
-    }
+    this.commands.set(command.name.toLowerCase(), command)
   }
 
-  /** Looks up a command by name or alias (case-insensitive). */
-  get(nameOrAlias: string): CommandDefinition | undefined {
-    const canonical = this.aliasMap.get(nameOrAlias.toLowerCase())
-    if (!canonical) return undefined
-    return this.commands.get(canonical)
+  /** Looks up a command by name (case-insensitive). */
+  get(name: string): CommandDefinition | undefined {
+    return this.commands.get(name.toLowerCase())
   }
 
-  /** Returns true when a name/alias maps to a registered command. */
-  has(nameOrAlias: string): boolean {
-    return this.aliasMap.has(nameOrAlias.toLowerCase())
+  /** Returns true when a name maps to a registered command. */
+  has(name: string): boolean {
+    return this.commands.has(name.toLowerCase())
   }
 
   /** Returns all registered command definitions. */
@@ -46,7 +36,7 @@ export class CommandRegistry {
     return this.all().map((cmd) => {
       const group = cmd.category !== 'utility' ? cmd.category : undefined
       // Strip group prefix from name for Discord subcommands
-      // e.g. "session_new" under group "session" → subcommand "new"
+      // e.g. "session_clear" under group "session" → subcommand "new"
       const shortName =
         group && cmd.name.startsWith(`${group}_`)
           ? cmd.name.slice(group.length + 1)

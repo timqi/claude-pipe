@@ -7,7 +7,7 @@ function formatSessionInfo(session: ClaudeSessionSummary): string {
     `═══════════════════════════════`,
     `✦ Session: ${shortId}`,
     `═══════════════════════════════`,
-    `  "${session.lastMessage}"`,
+    `  "${session.recentContext}"`,
     `  Model: ${session.model || 'unknown'}`,
     `  Messages: ${session.userMessageCount} user / ${session.assistantMessageCount} assistant`,
     `  Last active: ${session.lastActive || 'unknown'}`,
@@ -19,18 +19,17 @@ function formatSessionInfo(session: ClaudeSessionSummary): string {
 }
 
 /**
- * /new  (aliases: /newsession, /new_session, /reset, /reset_session, /session_new)
- * Starts a fresh Claude session for the current chat.
+ * /session_clear
+ * Clears conversation history and starts a fresh Claude session for the current chat.
  */
-export function sessionNewCommand(
+export function sessionClearCommand(
   startNewSession: (conversationKey: string) => Promise<void>
 ): CommandDefinition {
   return {
-    name: 'session_new',
+    name: 'session_clear',
     category: 'session',
-    description: 'Start a new Claude session for this chat',
-    usage: '/session_new — clears conversation history and starts fresh',
-    aliases: ['new', 'newsession', 'new_session', 'reset', 'reset_session'],
+    description: 'Clear conversation history and start a new session',
+    usage: '/session_clear — clears conversation history and starts fresh',
     permission: 'user',
     async execute(ctx: CommandContext): Promise<CommandResult> {
       await startNewSession(ctx.conversationKey)
@@ -52,7 +51,6 @@ export function sessionListCommand(
     name: 'session_list',
     category: 'session',
     description: 'List Claude sessions in the current workspace',
-    aliases: [],
     permission: 'user',
     async execute(ctx: CommandContext): Promise<CommandResult> {
       const workspace = getWorkspace(ctx.conversationKey)
@@ -65,7 +63,7 @@ export function sessionListCommand(
       const shown = sessions.slice(0, cap)
       const lines = shown.map((s, i) => {
         const shortId = s.sessionId.slice(0, 8)
-        const msg = s.lastMessage.length > 50 ? s.lastMessage.slice(0, 50) + '…' : s.lastMessage
+        const msg = s.recentContext.length > 50 ? s.recentContext.slice(0, 50) + '…' : s.recentContext
         const date = s.lastActive ? s.lastActive.slice(0, 10) : 'unknown'
         const active = currentSessionId === s.sessionId ? ' *' : ''
         return `${i + 1}. \`${shortId}\`${active} — "${msg}" (${date})`
@@ -93,7 +91,6 @@ export function sessionSelectCommand(
     category: 'session',
     description: 'Switch to a session by ID',
     usage: '/session_select <id> — switch to a session (prefix match supported)',
-    aliases: ['select', 'switch', 'resume'],
     args: [{ name: 'session_id', description: 'Session ID or prefix', required: true }],
     permission: 'user',
     async execute(ctx: CommandContext): Promise<CommandResult> {
@@ -131,7 +128,6 @@ export function sessionDeleteCommand(
     category: 'session',
     description: 'Delete a session by ID or the current session',
     usage: '/session_delete [session_id]',
-    aliases: [],
     args: [{ name: 'session_id', description: 'Session ID or prefix (omit to delete current)', required: false }],
     permission: 'user',
     async execute(ctx: CommandContext): Promise<CommandResult> {

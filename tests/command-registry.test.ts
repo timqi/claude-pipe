@@ -8,7 +8,6 @@ function makeCommand(overrides?: Partial<CommandDefinition>): CommandDefinition 
     name: 'test',
     category: 'utility',
     description: 'A test command',
-    aliases: [],
     permission: 'user',
     async execute() {
       return { content: 'ok' }
@@ -25,16 +24,6 @@ describe('CommandRegistry', () => {
 
     expect(registry.get('ping')).toBe(cmd)
     expect(registry.has('ping')).toBe(true)
-  })
-
-  it('retrieves a command by alias', () => {
-    const registry = new CommandRegistry()
-    const cmd = makeCommand({ name: 'session_new', aliases: ['new', 'reset'] })
-    registry.register(cmd)
-
-    expect(registry.get('new')).toBe(cmd)
-    expect(registry.get('reset')).toBe(cmd)
-    expect(registry.get('session_new')).toBe(cmd)
   })
 
   it('is case-insensitive', () => {
@@ -64,15 +53,15 @@ describe('CommandRegistry', () => {
   it('generates serializable command metadata', () => {
     const registry = new CommandRegistry()
     registry.register(makeCommand({ name: 'ping', category: 'utility' }))
-    registry.register(makeCommand({ name: 'session_new', category: 'session' }))
+    registry.register(makeCommand({ name: 'session_clear', category: 'session' }))
 
     const meta = registry.toMeta()
     const ping = meta.find((m) => m.name === 'ping')
-    const newCmd = meta.find((m) => m.name === 'new')
+    const clearCmd = meta.find((m) => m.name === 'clear')
 
     expect(ping?.group).toBeUndefined()
-    // Discord subcommand name strips group prefix: "session_new" → "new"
-    expect(newCmd?.name).toBe('new')
-    expect(newCmd?.group).toBe('session')
+    // Discord subcommand name strips group prefix: "session_clear" → "clear"
+    expect(clearCmd?.name).toBe('clear')
+    expect(clearCmd?.group).toBe('session')
   })
 })

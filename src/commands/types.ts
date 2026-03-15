@@ -45,9 +45,7 @@ export interface CommandDefinition {
   description: string
   /** Longer usage instructions. */
   usage?: string
-  /** Alternative names that also trigger this command. */
-  aliases?: string[]
-  /** Positional arguments for Discord slash command registration. */
+/** Positional arguments for Discord slash command registration. */
   args?: CommandArg[]
   /** Minimum permission level required. */
   permission: PermissionLevel

@@ -4,7 +4,7 @@ import path from 'node:path'
 
 export interface ClaudeSessionSummary {
   sessionId: string
-  lastMessage: string
+  recentContext: string
   model: string
   lastActive: string
   gitBranch: string
@@ -57,18 +57,23 @@ function extractTextFromContent(content: unknown): string | undefined {
   return undefined
 }
 
-function extractLastUserMessage(lines: string[]): string {
-  for (let i = lines.length - 1; i >= 0; i--) {
+function extractRecentUserMessages(lines: string[], count = 3): string {
+  const messages: string[] = []
+  for (let i = lines.length - 1; i >= 0 && messages.length < count; i--) {
     try {
       const obj = JSON.parse(lines[i]!)
       if (obj.type !== 'user') continue
       const text = extractTextFromContent(obj.message?.content)
-      if (text) return text
+      if (text) messages.push(text)
     } catch {
       // skip malformed lines
     }
   }
-  return '(no message)'
+  if (messages.length === 0) return '(no message)'
+  // Oldest first so the context reads chronologically
+  messages.reverse()
+  const joined = messages.join(' · ')
+  return joined.length > 120 ? joined.slice(0, 120) + '…' : joined
 }
 
 function parseSession(sessionId: string, raw: string): ClaudeSessionSummary {
@@ -109,7 +114,7 @@ function parseSession(sessionId: string, raw: string): ClaudeSessionSummary {
 
   return {
     sessionId,
-    lastMessage: extractLastUserMessage(lines),
+    recentContext: extractRecentUserMessages(lines),
     model,
     lastActive,
     gitBranch,

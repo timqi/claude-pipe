@@ -5,7 +5,7 @@ import type { ModelClient } from '../core/model-client.js'
 import type { SessionStore } from '../core/session-store.js'
 import { resolveWorkspace } from '../core/workspace.js'
 import {
-  sessionNewCommand,
+  sessionClearCommand,
   sessionListCommand,
   sessionSelectCommand,
   sessionDeleteCommand
@@ -52,7 +52,7 @@ export function setupCommands(
   const getWorkspace = (key: string): string => resolveWorkspace(config, key)
 
   // --- Session commands ---
-  registry.register(sessionNewCommand((key) => claude.startNewSession(key)))
+  registry.register(sessionClearCommand((key) => claude.startNewSession(key)))
   registry.register(sessionListCommand(getWorkspace, claudeSessionService, (key) => sessionStore.get(key)?.sessionId))
   registry.register(
     sessionSelectCommand(getWorkspace, claudeSessionService, (key, sessionId) =>
