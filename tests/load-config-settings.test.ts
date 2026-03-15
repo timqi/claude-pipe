@@ -14,52 +14,6 @@ describe('loadConfig from settings file', () => {
     vi.restoreAllMocks()
   })
 
-  it('produces valid config from a telegram settings file', () => {
-    fs.mkdirSync(settingsDir, { recursive: true })
-    fs.writeFileSync(
-      settingsPath,
-      JSON.stringify({
-        channel: 'telegram',
-        token: 'tok_abc',
-        allowFrom: ['100'],
-        model: 'claude-sonnet-4-5',
-        workspace: '/tmp/my-workspace'
-      }),
-      'utf-8'
-    )
-
-    // Simulate what loadConfig does when settings exist
-    const s = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
-    const telegramEnabled = s.channel === 'telegram'
-    const discordEnabled = s.channel === 'discord'
-
-    const parsed = configSchema.parse({
-      model: s.model,
-      workspace: s.workspace,
-      channels: {
-        telegram: {
-          enabled: telegramEnabled,
-          token: telegramEnabled ? s.token : '',
-          allowFrom: telegramEnabled ? s.allowFrom : []
-        },
-        discord: {
-          enabled: discordEnabled,
-          token: discordEnabled ? s.token : '',
-          allowFrom: discordEnabled ? s.allowFrom : []
-        }
-      },
-      summaryPrompt: { enabled: true, template: 'test' },
-      sessionStorePath: '/tmp/sessions.json',
-      maxToolIterations: 20
-    })
-
-    expect(parsed.model).toBe('claude-sonnet-4-5')
-    expect(parsed.channels.telegram.enabled).toBe(true)
-    expect(parsed.channels.telegram.token).toBe('tok_abc')
-    expect(parsed.channels.discord.enabled).toBe(false)
-    expect(parsed.workspace).toBe('/tmp/my-workspace')
-  })
-
   it('produces valid config from a discord settings file', () => {
     fs.mkdirSync(settingsDir, { recursive: true })
     fs.writeFileSync(
@@ -75,18 +29,12 @@ describe('loadConfig from settings file', () => {
     )
 
     const s = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
-    const telegramEnabled = s.channel === 'telegram'
     const discordEnabled = s.channel === 'discord'
 
     const parsed = configSchema.parse({
       model: s.model,
       workspace: s.workspace,
       channels: {
-        telegram: {
-          enabled: telegramEnabled,
-          token: telegramEnabled ? s.token : '',
-          allowFrom: telegramEnabled ? s.allowFrom : []
-        },
         discord: {
           enabled: discordEnabled,
           token: discordEnabled ? s.token : '',
@@ -101,7 +49,6 @@ describe('loadConfig from settings file', () => {
     expect(parsed.model).toBe('GLM-4.7')
     expect(parsed.channels.discord.enabled).toBe(true)
     expect(parsed.channels.discord.token).toBe('tok_xyz')
-    expect(parsed.channels.telegram.enabled).toBe(false)
   })
 
   it('produces valid config from a cli settings file', () => {
@@ -119,7 +66,6 @@ describe('loadConfig from settings file', () => {
     )
 
     const s = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
-    const telegramEnabled = s.channel === 'telegram'
     const discordEnabled = s.channel === 'discord'
     const cliEnabled = s.channel === 'cli'
 
@@ -127,11 +73,6 @@ describe('loadConfig from settings file', () => {
       model: s.model,
       workspace: s.workspace,
       channels: {
-        telegram: {
-          enabled: telegramEnabled,
-          token: telegramEnabled ? s.token : '',
-          allowFrom: telegramEnabled ? s.allowFrom : []
-        },
         discord: {
           enabled: discordEnabled,
           token: discordEnabled ? s.token : '',
@@ -150,7 +91,6 @@ describe('loadConfig from settings file', () => {
     expect(parsed.model).toBe('gpt-5-codex')
     expect(parsed.channels.cli?.enabled).toBe(true)
     expect(parsed.channels.cli?.allowFrom).toEqual(['local-user'])
-    expect(parsed.channels.telegram.enabled).toBe(false)
     expect(parsed.channels.discord.enabled).toBe(false)
   })
 })

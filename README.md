@@ -1,6 +1,6 @@
 # claude-pipe
 
-Claude Pipe is a personal AI assistant you run on your own devices. It answers you on the channels you already use (Telegram, Discord). The assistant runs locally on your machine or server and connects directly to [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex](https://developers.openai.com/codex/cli/)
+Claude Pipe is a personal AI assistant you run on your own devices. It answers you on Discord or via your terminal. The assistant runs locally on your machine or server and connects directly to [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex](https://developers.openai.com/codex/cli/)
 
 Inspired by [openclaw/openclaw](https://github.com/openclaw/openclaw).
 
@@ -36,8 +36,8 @@ First run starts the interactive setup wizard:
 
 1. **Choose LLM runtime** — select Claude Code CLI or OpenAI Codex CLI
 2. **Verify runtime CLI** — the wizard checks `claude` or `codex`
-3. **Choose platform** — select Telegram, Discord, or CLI (local terminal)
-4. **Enter bot token** — required for Telegram/Discord, skipped in CLI mode
+3. **Choose platform** — select Discord or CLI (local terminal)
+4. **Enter bot token** — required for Discord, skipped in CLI mode
 5. **Select model** — provider-specific presets (Claude) or live Codex model list from your local CLI, with free-form fallback
 6. **Set workspace** — specify the directory the agent can access (defaults to current directory)
 
@@ -82,11 +82,11 @@ Send a message to your bot (or type in terminal if using CLI mode) and the agent
 Claude Pipe is a single Node.js process. One event bus, pluggable channels, one agent loop.
 
 ```
-┌─────────┐  ┌─────────┐  ┌─────────┐
-│Telegram │  │ Discord │  │   CLI   │
-└────┬────┘  └────┬────┘  └────┬────┘
-     │            │            │
-     ▼            ▼            ▼
+┌─────────┐  ┌─────────┐
+│ Discord │  │   CLI   │
+└────┬────┘  └────┬────┘
+     │            │
+     ▼            ▼
 ┌──────────────────────────────────────┐
 │            Message Bus               │
 │       (inbound / outbound queues)    │
@@ -119,7 +119,7 @@ Channels and the agent loop are fully decoupled through async inbound/outbound q
 
 ### Pluggable Channels
 
-Each channel (Telegram, Discord, CLI) implements the same adapter interface: `start`, `stop`, `send`, `editMessage`. The channel manager owns their lifecycle and routes outbound messages to the right adapter.
+Each channel (Discord, CLI) implements the same adapter interface: `start`, `stop`, `send`, `editMessage`. The channel manager owns their lifecycle and routes outbound messages to the right adapter.
 
 ### Command Interception
 
@@ -155,7 +155,7 @@ Configuration is stored in `~/.claude-pipe/settings.json` and created by the onb
     "command": "claude",
     "args": ["--print", "--verbose", "--output-format", "stream-json"]
   },
-  "channel": "telegram",
+  "channel": "discord",
   "token": "your-bot-token",
   "allowFrom": ["user-id-1", "user-id-2"],
   "allowChannels": ["discord-channel-id-1", "discord-channel-id-2"],
@@ -168,8 +168,8 @@ Configuration is stored in `~/.claude-pipe/settings.json` and created by the onb
 |---|---|
 | `provider` | LLM runtime: `claude` or `codex` |
 | `claudeCli` | Claude CLI runtime config (`command` and startup `args`) |
-| `channel` | Platform to use: `telegram`, `discord`, or `cli` |
-| `token` | Bot token from [BotFather](https://t.me/botfather) or [Discord Developer Portal](https://discord.com/developers/applications) |
+| `channel` | Platform to use: `discord` or `cli` |
+| `token` | Bot token from [Discord Developer Portal](https://discord.com/developers/applications) |
 | `allowFrom` | Array of allowed user IDs (empty = allow everyone) |
 | `allowChannels` | Discord-only channel ID allowlist (empty/missing = allow all channels) |
 | `model` | Claude model to use (e.g., `claude-haiku-4`, `claude-sonnet-4-5`, `claude-opus-4-5`) |
@@ -185,7 +185,6 @@ You can map different channels/chats to different project directories so the bot
 **Step 1: Find your chat ID**
 
 - **Discord**: Open Discord Settings → Advanced → enable **Developer Mode**. Then right-click any channel and select **Copy Channel ID**.
-- **Telegram**: Send a message to your bot, then check the claude-pipe logs for `agent.inbound` — the `chatId` field is your chat ID.
 - **Either platform**: Send `/session_info` in the chat — the conversation key shown (e.g. `discord:1481458060009541692`) contains the chat ID after the colon.
 
 **Step 2: Add `channelWorkspaces` to `~/.claude-pipe/settings.json`**
@@ -195,7 +194,7 @@ You can map different channels/chats to different project directories so the bot
   "workspace": "/default/project",
   "channelWorkspaces": {
     "discord:110372368532684800": "/home/user/projects/project-a",
-    "telegram:123456789": "/home/user/projects/project-b"
+    "discord:148145806000954169": "/home/user/projects/project-b"
   }
 }
 ```
@@ -253,6 +252,6 @@ npm run test:run # run tests once
 
 ## Current limitations
 
-- Text and voice (via whisper transcription) — no images yet
+- Text only — no images yet
 - Runs as a single local process (deployable with systemd)
 - No scheduled or background tasks

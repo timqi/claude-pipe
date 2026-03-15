@@ -31,7 +31,6 @@ export const configSchema = z.object({
   workspace: z.string(),
   channelWorkspaces: z.record(z.string(), z.string()).optional(),
   channels: z.object({
-    telegram: channelSchema,
     discord: discordChannelSchema,
     cli: cliChannelSchema.optional()
   }),
@@ -81,7 +80,7 @@ export const configSchema = z.object({
       enabled: z.boolean().default(true),
       intervalMinutes: z.number().int().positive().default(30),
       defaultChatId: z.string().optional(),
-      defaultChannel: z.enum(['telegram', 'discord', 'cli']).optional()
+      defaultChannel: z.enum(['discord', 'cli']).optional()
     })
     .default({
       enabled: true,

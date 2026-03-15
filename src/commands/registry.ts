@@ -4,7 +4,7 @@ import type { CommandDefinition, CommandMeta } from './types.js'
  * Central registry for all bot commands.
  *
  * Provides O(1) lookup by name or alias and exposes metadata
- * for Discord slash-command registration and Telegram BotFather setup.
+ * for Discord slash-command registration.
  */
 export class CommandRegistry {
   private readonly commands = new Map<string, CommandDefinition>()
@@ -40,8 +40,7 @@ export class CommandRegistry {
   }
 
   /**
-   * Builds serializable metadata suitable for Discord slash-command
-   * registration or Telegram BotFather `/setcommands`.
+   * Builds serializable metadata suitable for Discord slash-command registration.
    */
   toMeta(): CommandMeta[] {
     return this.all().map((cmd) => {
@@ -57,8 +56,7 @@ export class CommandRegistry {
         description: cmd.description,
         category: cmd.category,
         ...(group ? { group } : {}),
-        ...(cmd.args?.length ? { args: cmd.args } : {}),
-        telegramName: cmd.name
+        ...(cmd.args?.length ? { args: cmd.args } : {})
       }
     })
   }

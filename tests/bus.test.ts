@@ -8,7 +8,7 @@ describe('MessageBus', () => {
 
     const consumer = bus.consumeInbound()
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: 'c1',
       content: 'hello',
@@ -16,7 +16,7 @@ describe('MessageBus', () => {
     })
 
     await expect(consumer).resolves.toMatchObject({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: 'c1',
       content: 'hello'

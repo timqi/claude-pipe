@@ -24,12 +24,11 @@ const MAX_TOOL_LINES = 10
 
 /**
  * Appends a small footer line showing the current time and completion status.
- * Uses Discord subtext (-#) or Telegram italic as appropriate.
+ * Uses Discord subtext (-#) as appropriate.
  */
 function statusFooter(channel: ChannelName, finished: boolean): string {
   const time = new Date().toLocaleTimeString('en-GB', { hour12: false })
   const label = finished ? 'Done' : '⏳ Working...'
-  if (channel === 'telegram') return `\n\n_${time} · ${label}_`
   if (channel === 'discord') return `\n\n-# ${time} · ${label}`
   return `\n\n${time} · ${label}`
 }

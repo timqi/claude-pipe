@@ -2,7 +2,6 @@ import { describe, expect, it, vi, afterEach } from 'vitest'
 
 import type { ClaudePipeConfig } from '../src/config/schema.js'
 import { DiscordChannel } from '../src/channels/discord.js'
-import { TelegramChannel } from '../src/channels/telegram.js'
 import { MessageBus } from '../src/core/bus.js'
 
 function makeConfig(): ClaudePipeConfig {
@@ -10,7 +9,6 @@ function makeConfig(): ClaudePipeConfig {
     model: 'claude-sonnet-4-5',
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: true, token: 'TKN', allowFrom: [] },
       discord: { enabled: true, token: 'DTKN', allowFrom: [] }
     },
     tools: { execTimeoutSec: 60 },
@@ -23,26 +21,9 @@ function makeConfig(): ClaudePipeConfig {
 
 describe('channel retry behavior', () => {
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-  const originalFetch = global.fetch
 
   afterEach(() => {
-    global.fetch = originalFetch
     vi.restoreAllMocks()
-  })
-
-  it('retries Telegram send and succeeds on second attempt', async () => {
-    const bus = new MessageBus()
-    const channel = new TelegramChannel(makeConfig(), bus, logger)
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'error' })
-      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => '' }) as unknown as typeof fetch
-    global.fetch = fetchMock
-
-    await channel.send({ channel: 'telegram', chatId: '123', content: 'hello' })
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('retries Discord send and succeeds on second attempt', async () => {

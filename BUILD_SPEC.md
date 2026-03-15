@@ -5,10 +5,10 @@
 - Source of truth: `/Users/mg/workspace/claude-pipe/PRD.md`
 
 ## 1. Goals
-Build a local TypeScript bot for Telegram and Discord using Claude Code CLI with per-channel session continuity. Inspired by the agent loop patterns from [openclaw/openclaw](https://github.com/openclaw/openclaw).
+Build a local TypeScript bot for Discord using Claude Code CLI with per-channel session continuity. Inspired by the agent loop patterns from [openclaw/openclaw](https://github.com/openclaw/openclaw).
 
 ## 2. Locked Decisions
-- Channels: Telegram + Discord.
+- Channels: Discord.
 - Trigger mode: reply to every message.
 - Message type: text-only first.
 - Session scope: per channel/chat (`channel:chat_id`).
@@ -44,7 +44,6 @@ claude-pipe/
       transcript-logger.ts
     channels/
       base.ts
-      telegram.ts
       discord.ts
       manager.ts
 ```
@@ -66,7 +65,7 @@ claude-pipe/
 
 ```ts
 // src/core/types.ts
-export type ChannelName = 'telegram' | 'discord'
+export type ChannelName = 'discord' | 'cli'
 
 export interface InboundMessage {
   channel: ChannelName
@@ -101,7 +100,6 @@ export interface ClaudePipeConfig {
   model: string
   workspace: string
   channels: {
-    telegram: { enabled: boolean; token: string; allowFrom: string[] }
     discord: { enabled: boolean; token: string; allowFrom: string[] }
   }
   summaryPrompt: {
@@ -179,12 +177,6 @@ The CLI handles tool execution and result formatting. Claude Pipe focuses on:
 
 ## 10. Channel Adapter Requirements
 
-### Telegram
-- Long polling implementation.
-- Receive text messages and forward every inbound message.
-- Outbound sends text to same chat id.
-- Optional allow list check.
-
 ### Discord
 - Gateway + REST send.
 - Receive `MESSAGE_CREATE` and forward every inbound non-bot message.
@@ -233,25 +225,21 @@ Do not log secrets or full file contents.
 
 ## 15. Acceptance Test Matrix
 
-1. Telegram workspace summary
+1. Discord workspace summary
 - Send: "Summarize key files in the workspace"
-- Expect: bot reads workspace files and returns summary in same Telegram chat.
+- Expect: bot reads workspace files and returns summary in same Discord chat.
 
-2. Discord workspace summary
-- Send equivalent prompt in Discord channel.
-- Expect: summary response in same channel.
-
-3. Session continuity
+2. Session continuity
 - Send follow-up: "Now summarize only the backend files"
 - Restart process.
 - Send follow-up reference question.
 - Expect: continuity via resumed Claude session.
 
-4. Tool invocation
+3. Tool invocation
 - Prompt requiring `list_dir` then `read_file`.
 - Expect: tool calls execute and final answer reflects tool output.
 
-5. Failure handling
+4. Failure handling
 - Force failing command via `exec`.
 - Expect: graceful error surfaced to model and coherent final response.
 
@@ -259,7 +247,7 @@ Do not log secrets or full file contents.
 1. Bootstrap project + config + logger + types.
 2. Session store + Claude client wrapper.
 3. Bus + agent loop.
-4. Telegram + Discord adapters.
+4. Discord adapter.
 5. End-to-end local validation.
 
 ## 17. Definition of Done

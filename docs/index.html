@@ -211,7 +211,7 @@
       transform: translateY(-1px);
     }
 
-    /* --- Telegram mockup --- */
+    /* --- Chat mockup --- */
     .tg-section {
       max-width: 420px;
       margin: 0 auto;
@@ -225,7 +225,7 @@
       box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
     }
 
-    /* Telegram header */
+    /* Chat header */
     .tg-header {
       background: #17212b;
       padding: 14px 16px;
@@ -1027,7 +1027,7 @@
   <div class="hero-badge"><span class="dot"></span> claude-pipe v1</div>
   <h1>Claude Code,<br>from your <span>chat app</span></h1>
   <p class="subtitle">
-    Send a Telegram message. Get code written, files edited, emails drafted, meetings scheduled &mdash; all through the same Claude you know and love.
+    Send a Discord message. Get code written, files edited, emails drafted, meetings scheduled &mdash; all through the same Claude you know and love.
   </p>
   <div class="hero-actions">
     <a href="https://github.com/georgi/claude-pipe" class="btn btn-primary">View on GitHub</a>
@@ -1035,7 +1035,7 @@
   </div>
 </section>
 
-<!-- Telegram mockup -->
+<!-- Chat mockup -->
 <section class="tg-section">
   <div class="tg-phone">
     <div class="tg-header">
@@ -1070,7 +1070,7 @@
     <div class="flow-node">
       <div class="icon">&#x1F4AC;</div>
       <div class="name">You</div>
-      <div class="desc">Telegram / Discord</div>
+      <div class="desc">Discord / CLI</div>
     </div>
     <div class="flow-arrow">&#x2192;</div>
     <div class="flow-node">
@@ -1103,11 +1103,6 @@
 
   <!-- Flow diagram -->
   <div class="arch-flow">
-    <div class="arch-node">
-      <div class="a-name c-green">Telegram</div>
-      <div class="a-desc">channel adapter</div>
-    </div>
-    <div class="arch-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></div>
     <div class="arch-node">
       <div class="a-name c-green">Discord</div>
       <div class="a-desc">channel adapter</div>
@@ -1202,7 +1197,7 @@
         <div class="int-icon">&#x2709;&#xFE0F;</div>
         <h3>Gmail</h3>
       </div>
-      <p>Search your inbox, draft replies, send emails. All from a Telegram message.</p>
+      <p>Search your inbox, draft replies, send emails. All from a Discord message.</p>
       <span class="tag" style="background:rgba(234,67,53,0.1);color:#ea4335">gog gmail</span>
     </div>
     <div class="integration" style="--stripe-color:#4285f4;--icon-bg:rgba(66,133,244,0.1)">
@@ -1265,7 +1260,7 @@
       <div class="versus-item">
         <div class="v-icon" style="background:var(--accent-soft)">&#x1F4F1;</div>
         <div class="v-name">claude-pipe</div>
-        <div class="v-label">Telegram on your phone</div>
+        <div class="v-label">Discord on your phone</div>
       </div>
     </div>
   </div>
@@ -1314,7 +1309,7 @@
         <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </summary>
       <div class="faq-answer">
-        claude-pipe is a lightweight bridge that connects your chat apps (Telegram, Discord) to a real Claude Code session running on your machine. You send a message from your phone and get the full Claude Code experience &mdash; file editing, shell commands, web search, Google integrations &mdash; without opening a terminal.
+        claude-pipe is a lightweight bridge that connects your chat apps (Discord, CLI) to a real Claude Code session running on your machine. You send a message from your phone and get the full Claude Code experience &mdash; file editing, shell commands, web search, Google integrations &mdash; without opening a terminal.
       </div>
     </details>
     <details class="faq-item">
@@ -1332,7 +1327,7 @@
         <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </summary>
       <div class="faq-answer">
-        Node.js 20+, a Claude Code subscription (or Codex CLI), and a bot token for your channel (Telegram bot token or Discord bot token). The interactive setup wizard handles configuration. Your machine needs to stay running since the agent runs locally.
+        Node.js 20+, a Claude Code subscription (or Codex CLI), and a Discord bot token. The interactive setup wizard handles configuration. Your machine needs to stay running since the agent runs locally.
       </div>
     </details>
     <details class="faq-item">
@@ -1341,7 +1336,7 @@
         <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </summary>
       <div class="faq-answer">
-        Messages flow through the Telegram/Discord API (as with any bot), but the agent itself runs entirely on your machine. Files, code, and credentials never leave your server. Sessions are stored in a local JSON file.
+        Messages flow through the Discord API (as with any bot), but the agent itself runs entirely on your machine. Files, code, and credentials never leave your server. Sessions are stored in a local JSON file.
       </div>
     </details>
     <details class="faq-item">

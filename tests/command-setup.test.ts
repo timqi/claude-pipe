@@ -10,8 +10,7 @@ function makeDeps(): CommandDependencies {
     model: 'claude-sonnet-4-5',
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: true, token: 'tg-token', allowFrom: ['admin1'] },
-      discord: { enabled: true, token: 'dc-token', allowFrom: ['admin2'] }
+      discord: { enabled: true, token: 'dc-token', allowFrom: ['admin1', 'admin2'] }
     },
     tools: { execTimeoutSec: 60 },
     summaryPrompt: { enabled: true, template: 'Workspace: {{workspace}} Request: {{request}}' },
@@ -89,24 +88,24 @@ describe('setupCommands', () => {
   it('derives admin IDs from config allowFrom by default', async () => {
     const { handler } = setupCommands(makeDeps())
 
-    // admin1 (from telegram allowFrom) can run admin commands
-    const result = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'admin1')
+    // admin1 (from discord allowFrom) can run admin commands
+    const result = await handler.execute('/config_set summaryPromptEnabled true', 'discord', '42', 'admin1')
     expect(result).not.toBeNull()
     expect(result?.error).toBeUndefined()
 
     // unknown user gets denied
-    const denied = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'unknown')
+    const denied = await handler.execute('/config_set summaryPromptEnabled true', 'discord', '42', 'unknown')
     expect(denied?.error).toBe(true)
   })
 
   it('accepts explicit admin IDs override', async () => {
     const { handler } = setupCommands(makeDeps(), { adminIds: ['custom-admin'] })
 
-    const result = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'custom-admin')
+    const result = await handler.execute('/config_set summaryPromptEnabled true', 'discord', '42', 'custom-admin')
     expect(result?.error).toBeUndefined()
 
     // Default allowFrom users no longer have admin
-    const denied = await handler.execute('/config_set summaryPromptEnabled true', 'telegram', '42', 'admin1')
+    const denied = await handler.execute('/config_set summaryPromptEnabled true', 'discord', '42', 'admin1')
     expect(denied?.error).toBe(true)
   })
 
@@ -123,7 +122,7 @@ describe('setupCommands', () => {
     const deps = makeDeps()
     const { handler } = setupCommands(deps)
 
-    const result = await handler.execute('/claude_ask hello world', 'telegram', '42', 'admin1')
+    const result = await handler.execute('/claude_ask hello world', 'discord', '42', 'admin1')
     expect(result?.content).toBe('claude reply')
     expect((deps.claude as any).runTurn).toHaveBeenCalled()
   })

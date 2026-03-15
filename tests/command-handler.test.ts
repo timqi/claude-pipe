@@ -27,13 +27,13 @@ function setup(commands: CommandDefinition[], adminIds: string[] = []) {
 describe('CommandHandler', () => {
   it('returns null for non-command messages', async () => {
     const handler = setup([makeCommand({ name: 'ping' })])
-    const result = await handler.execute('hello world', 'telegram', '42', 'u1')
+    const result = await handler.execute('hello world', 'discord', '42', 'u1')
     expect(result).toBeNull()
   })
 
   it('returns null for unrecognised slash commands', async () => {
     const handler = setup([makeCommand({ name: 'ping' })])
-    const result = await handler.execute('/unknown', 'telegram', '42', 'u1')
+    const result = await handler.execute('/unknown', 'discord', '42', 'u1')
     expect(result).toBeNull()
   })
 
@@ -41,14 +41,14 @@ describe('CommandHandler', () => {
     const execute = vi.fn(async () => ({ content: 'pong' }))
     const handler = setup([makeCommand({ name: 'ping', execute })])
 
-    const result = await handler.execute('/ping', 'telegram', '42', 'u1')
+    const result = await handler.execute('/ping', 'discord', '42', 'u1')
     expect(result).toEqual({ content: 'pong' })
     expect(execute).toHaveBeenCalledWith(
       expect.objectContaining({
-        channel: 'telegram',
+        channel: 'discord',
         chatId: '42',
         senderId: 'u1',
-        conversationKey: 'telegram:42'
+        conversationKey: 'discord:42'
       })
     )
   })
@@ -57,7 +57,7 @@ describe('CommandHandler', () => {
     const execute = vi.fn(async () => ({ content: 'new session' }))
     const handler = setup([makeCommand({ name: 'session_new', aliases: ['new'], execute })])
 
-    const result = await handler.execute('/new', 'telegram', '42', 'u1')
+    const result = await handler.execute('/new', 'discord', '42', 'u1')
     expect(result).toEqual({ content: 'new session' })
   })
 
@@ -77,7 +77,7 @@ describe('CommandHandler', () => {
     })
     const handler = setup([makeCommand({ name: 'ask', execute })])
 
-    await handler.execute('/ask how are you', 'telegram', '42', 'u1')
+    await handler.execute('/ask how are you', 'discord', '42', 'u1')
     expect(captured?.args).toEqual(['how', 'are', 'you'])
     expect(captured?.rawArgs).toBe('how are you')
   })
@@ -101,7 +101,7 @@ describe('CommandHandler', () => {
       ['admin1']
     )
 
-    const result = await handler.execute('/secret', 'telegram', '42', 'regular-user')
+    const result = await handler.execute('/secret', 'discord', '42', 'regular-user')
     expect(result).toEqual({
       content: 'You do not have permission to use this command.',
       error: true
@@ -115,15 +115,15 @@ describe('CommandHandler', () => {
       ['admin1']
     )
 
-    const result = await handler.execute('/secret', 'telegram', '42', 'admin1')
+    const result = await handler.execute('/secret', 'discord', '42', 'admin1')
     expect(result).toEqual({ content: 'granted' })
   })
 
-  it('strips Telegram @bot mention from commands', async () => {
+  it('strips @bot mention from commands', async () => {
     const execute = vi.fn(async () => ({ content: 'pong' }))
     const handler = setup([makeCommand({ name: 'ping', execute })])
 
-    const result = await handler.execute('/ping@my_bot', 'telegram', '42', 'u1')
+    const result = await handler.execute('/ping@my_bot', 'discord', '42', 'u1')
     expect(result).toEqual({ content: 'pong' })
   })
 
@@ -141,7 +141,7 @@ describe('CommandHandler', () => {
       })
     ])
 
-    const result = await handler.execute('/session select abc12345', 'telegram', '42', 'u1')
+    const result = await handler.execute('/session select abc12345', 'discord', '42', 'u1')
     expect(result).toEqual({ content: 'selected' })
     expect(captured?.args).toEqual(['abc12345'])
     expect(captured?.rawArgs).toBe('abc12345')
@@ -155,7 +155,7 @@ describe('CommandHandler', () => {
     })
     const handler = setup([makeCommand({ name: 'session_select', execute })])
 
-    await handler.execute('/session_select@mybot 13bbf2f6', 'telegram', '42', 'u1')
+    await handler.execute('/session_select@mybot 13bbf2f6', 'discord', '42', 'u1')
     expect(captured?.args).toEqual(['13bbf2f6'])
     expect(captured?.rawArgs).toBe('13bbf2f6')
   })
@@ -168,7 +168,7 @@ describe('CommandHandler', () => {
     })
     const handler = setup([makeCommand({ name: 'session_select', execute })])
 
-    await handler.execute('/session@mybot select 13bbf2f6', 'telegram', '42', 'u1')
+    await handler.execute('/session@mybot select 13bbf2f6', 'discord', '42', 'u1')
     expect(captured?.args).toEqual(['13bbf2f6'])
     expect(captured?.rawArgs).toBe('13bbf2f6')
   })

@@ -2,7 +2,7 @@
   "name": "claude-pipe",
   "version": "0.1.0",
   "private": true,
-  "description": "TypeScript bot for Telegram and Discord using Claude Code CLI stream-json subprocesses. Inspired by openclaw/openclaw.",
+  "description": "TypeScript bot for Discord using Claude Code CLI stream-json subprocesses. Inspired by openclaw/openclaw.",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -19,7 +19,6 @@
   "dependencies": {
     "discord.js": "^14.24.2",
     "dotenv": "^16.4.5",
-    "openai": "^6.21.0",
     "zod": "^4.0.15"
   },
   "devDependencies": {

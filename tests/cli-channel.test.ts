@@ -9,7 +9,6 @@ function makeConfig(enabled = true) {
     model: 'claude-sonnet-4-5',
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: { enabled: false, token: '', allowFrom: [] },
       cli: { enabled, allowFrom: [] }
     },

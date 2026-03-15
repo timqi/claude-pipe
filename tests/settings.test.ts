@@ -28,7 +28,7 @@ describe('settings', () => {
         command: 'claude',
         args: ['--print', '--output-format', 'stream-json']
       },
-      channel: 'telegram' as const,
+      channel: 'discord' as const,
       token: 'tok_123',
       allowFrom: ['42'],
       model: 'claude-sonnet-4-5',
@@ -38,7 +38,7 @@ describe('settings', () => {
     expect(settingsExist()).toBe(true)
 
     const loaded = readSettings()
-    expect(loaded.channel).toBe('telegram')
+    expect(loaded.channel).toBe('discord')
     expect(loaded.token).toBe('tok_123')
     expect(loaded.model).toBe('claude-sonnet-4-5')
     expect(loaded.workspace).toBe('/tmp/ws')

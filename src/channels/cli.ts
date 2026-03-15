@@ -12,7 +12,7 @@ interface CliChannelIo {
 }
 
 /**
- * Local terminal channel for testing the bot without Telegram/Discord.
+ * Local terminal channel for testing the bot without Discord.
  */
 export class CliChannel implements Channel {
   readonly name = 'cli' as const

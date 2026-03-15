@@ -27,7 +27,6 @@ function makeConfig() {
     model: 'gpt-5-codex',
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: { enabled: false, token: '', allowFrom: [] }
     },
     summaryPrompt: { enabled: true, template: 'Workspace: {{workspace}} Request: {{request}}' },
@@ -124,15 +123,15 @@ describe('CodexClient (json-rpc app-server)', () => {
       }
     })
 
-    const result = await client.runTurn('telegram:1', 'hello', {
+    const result = await client.runTurn('discord-chat:1', 'hello', {
       workspace: '/tmp/workspace',
-      channel: 'telegram',
+      channel: 'discord',
       chatId: '1',
       onUpdate: (u) => updates.push({ kind: u.kind, message: u.message, toolName: u.toolName })
     })
 
     expect(result).toBe('hello world')
-    expect(store.set).toHaveBeenCalledWith('telegram:1', 'thread-1')
+    expect(store.set).toHaveBeenCalledWith('discord-chat:1', 'thread-1')
     expect(spawnMock).toHaveBeenCalledWith(
       'codex',
       ['--sandbox', 'danger-full-access', '--ask-for-approval', 'never', 'app-server'],

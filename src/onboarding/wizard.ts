@@ -176,17 +176,16 @@ async function checkSelectedCli(provider: LlmProvider): Promise<void> {
 
 async function chooseChannel(
   rl: readline.Interface,
-  current?: 'telegram' | 'discord' | 'cli'
-): Promise<'telegram' | 'discord' | 'cli'> {
-  const currentLabel = current === 'telegram' ? '1' : current === 'discord' ? '2' : current === 'cli' ? '3' : ''
+  current?: 'discord' | 'cli'
+): Promise<'discord' | 'cli'> {
+  const currentLabel = current === 'discord' ? '1' : current === 'cli' ? '2' : ''
   console.log(
-    'Which messaging platform do you want to use?\n  1) Telegram\n  2) Discord\n  3) CLI (local terminal)\n'
+    'Which messaging platform do you want to use?\n  1) Discord\n  2) CLI (local terminal)\n'
   )
-  const choice = await ask(rl, `Enter 1, 2, or 3${current ? ` [${currentLabel}]` : ''}: `)
-  if (choice === '3') return 'cli'
-  if (choice === '2') return 'discord'
-  if (choice === '1') return 'telegram'
-  return current ?? 'telegram'
+  const choice = await ask(rl, `Enter 1 or 2${current ? ` [${currentLabel}]` : ''}: `)
+  if (choice === '2') return 'cli'
+  if (choice === '1') return 'discord'
+  return current ?? 'discord'
 }
 
 /* ------------------------------------------------------------------ */
@@ -195,7 +194,7 @@ async function chooseChannel(
 
 async function collectCredentials(
   rl: readline.Interface,
-  channel: 'telegram' | 'discord' | 'cli',
+  channel: 'discord' | 'cli',
   currentToken?: string
 ): Promise<string> {
   if (channel === 'cli') {
@@ -203,21 +202,12 @@ async function collectCredentials(
     return ''
   }
 
-  if (channel === 'telegram') {
-    console.log(
-      '\nCreate a Telegram bot:\n' +
-        '  1. Open @BotFather in Telegram\n' +
-        '  2. Send /newbot and follow the prompts\n' +
-        '  3. Copy the bot token\n'
-    )
-  } else {
-    console.log(
-      '\nCreate a Discord bot:\n' +
-        '  1. Go to https://discord.com/developers/applications\n' +
-        '  2. Create a new application → Bot → Reset Token\n' +
-        '  3. Copy the bot token\n'
-    )
-  }
+  console.log(
+    '\nCreate a Discord bot:\n' +
+      '  1. Go to https://discord.com/developers/applications\n' +
+      '  2. Create a new application → Bot → Reset Token\n' +
+      '  3. Copy the bot token\n'
+  )
   let token = ''
   while (!token) {
     const prompt = currentToken
@@ -418,7 +408,10 @@ export async function runOnboarding(existingSettings?: Settings): Promise<Settin
     if (!isReconfigure || existingSettings?.provider !== provider) {
       await checkSelectedCli(provider)
     }
-    const channel = await chooseChannel(rl, existingSettings?.channel)
+    const existingChannel = existingSettings?.channel === 'discord' || existingSettings?.channel === 'cli'
+      ? existingSettings.channel
+      : undefined
+    const channel = await chooseChannel(rl, existingChannel)
     const token = await collectCredentials(rl, channel, existingSettings?.token)
     const model = await chooseModelForProvider(rl, provider, existingSettings?.model)
     const workspace = await chooseWorkspace(rl, existingSettings?.workspace)

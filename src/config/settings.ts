@@ -16,14 +16,14 @@ export interface Settings {
     command?: string
     args?: string[]
   }
-  channel: 'telegram' | 'discord' | 'cli'
+  channel: 'discord' | 'cli'
   token: string
   allowFrom: string[]
   // Optional allowlist of Discord channel IDs. Empty/missing means allow all channels.
   allowChannels?: string[]
   model: string
   workspace: string
-  /** Maps conversation keys (e.g. "discord:123", "telegram:456") to workspace paths. */
+  /** Maps conversation keys (e.g. "discord:123") to workspace paths. */
   channelWorkspaces?: Record<string, string>
   personality?: PersonalitySettings
   transcriptLog?: {

@@ -70,11 +70,9 @@ describe('CommandRegistry', () => {
     const ping = meta.find((m) => m.name === 'ping')
     const newCmd = meta.find((m) => m.name === 'new')
 
-    expect(ping?.telegramName).toBe('ping')
     expect(ping?.group).toBeUndefined()
     // Discord subcommand name strips group prefix: "session_new" → "new"
     expect(newCmd?.name).toBe('new')
-    expect(newCmd?.telegramName).toBe('session_new')
     expect(newCmd?.group).toBe('session')
   })
 })

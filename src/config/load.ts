@@ -65,9 +65,14 @@ export function loadConfig(): ClaudePipeConfig {
       }
     }
 
+    if ((s.channel as string) === 'telegram') {
+      throw new Error(
+        'Telegram is no longer supported. Run `claude-pipe --reconfigure` to choose Discord or CLI.'
+      )
+    }
+
     const llmProvider = s.provider ?? 'claude'
 
-    const telegramEnabled = s.channel === 'telegram'
     const discordEnabled = s.channel === 'discord'
     const cliEnabled = s.channel === 'cli'
 
@@ -83,11 +88,6 @@ export function loadConfig(): ClaudePipeConfig {
       workspace: s.workspace,
       channelWorkspaces: s.channelWorkspaces,
       channels: {
-        telegram: {
-          enabled: telegramEnabled,
-          token: telegramEnabled ? s.token : '',
-          allowFrom: telegramEnabled ? s.allowFrom : []
-        },
         discord: {
           enabled: discordEnabled,
           token: discordEnabled ? s.token : '',
@@ -128,11 +128,6 @@ export function loadConfig(): ClaudePipeConfig {
     },
     workspace: process.env.CLAUDEPIPE_WORKSPACE ?? process.cwd(),
     channels: {
-      telegram: {
-        enabled: process.env.CLAUDEPIPE_TELEGRAM_ENABLED === 'true',
-        token: process.env.CLAUDEPIPE_TELEGRAM_TOKEN ?? '',
-        allowFrom: parseCsv(process.env.CLAUDEPIPE_TELEGRAM_ALLOW_FROM)
-      },
       discord: {
         enabled: process.env.CLAUDEPIPE_DISCORD_ENABLED === 'true',
         token: process.env.CLAUDEPIPE_DISCORD_TOKEN ?? '',

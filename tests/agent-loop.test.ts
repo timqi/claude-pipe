@@ -10,7 +10,6 @@ function makeConfig(): ClaudePipeConfig {
     model: 'claude-sonnet-4-5',
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: { enabled: false, token: '', allowFrom: [] }
     },
     tools: { execTimeoutSec: 60 },
@@ -35,7 +34,7 @@ describe('AgentLoop', () => {
 
     const run = loop.start()
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -43,16 +42,16 @@ describe('AgentLoop', () => {
     })
 
     const outbound = await bus.consumeOutbound()
-    expect(outbound.channel).toBe('telegram')
+    expect(outbound.channel).toBe('discord')
     expect(outbound.chatId).toBe('42')
     expect(outbound.content).toContain('assistant reply')
 
     expect(claude.runTurn).toHaveBeenCalledWith(
-      'telegram:42',
+      'discord:42',
       'hello',
       expect.objectContaining({
         workspace: '/tmp/workspace',
-        channel: 'telegram',
+        channel: 'discord',
         chatId: '42'
       })
     )
@@ -79,7 +78,7 @@ describe('AgentLoop', () => {
     const run = loop.start()
 
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: '/new',
@@ -88,7 +87,7 @@ describe('AgentLoop', () => {
 
     const outbound = await bus.consumeOutbound()
     expect(outbound.content).toContain('New session started')
-    expect(claude.startNewSession).toHaveBeenCalledWith('telegram:42')
+    expect(claude.startNewSession).toHaveBeenCalledWith('discord:42')
     expect(claude.runTurn).not.toHaveBeenCalled()
 
     loop.stop()
@@ -101,14 +100,14 @@ describe('AgentLoop', () => {
       runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
         await context.onUpdate({
           kind: 'tool_call_started',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Using tool: WebSearch',
           toolName: 'WebSearch',
           toolUseId: 'tool-1'
         })
         await context.onUpdate({
           kind: 'tool_call_finished',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Tool completed: WebSearch',
           toolName: 'WebSearch',
           toolUseId: 'tool-1'
@@ -124,7 +123,7 @@ describe('AgentLoop', () => {
     const run = loop.start()
 
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -163,14 +162,14 @@ describe('AgentLoop', () => {
       runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
         await context.onUpdate({
           kind: 'tool_call_started',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Using tool: WebSearch',
           toolName: 'WebSearch',
           toolUseId: 'tool-1'
         })
         await context.onUpdate({
           kind: 'tool_call_finished',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Tool completed: WebSearch',
           toolName: 'WebSearch',
           toolUseId: 'tool-1'
@@ -182,7 +181,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const sentMessage = { channel: 'telegram' as const, chatId: '42', messageId: '99' }
+    const sentMessage = { channel: 'discord' as const, chatId: '42', messageId: '99' }
     const channelManager = {
       sendDirect: vi.fn(async () => sentMessage),
       editMessage: vi.fn(async () => undefined)
@@ -193,7 +192,7 @@ describe('AgentLoop', () => {
 
     const run = loop.start()
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -206,7 +205,7 @@ describe('AgentLoop', () => {
     // Should have sent the initial tool status message
     expect(channelManager.sendDirect).toHaveBeenCalledWith(
       expect.objectContaining({
-        channel: 'telegram',
+        channel: 'discord',
         chatId: '42',
         content: expect.stringContaining('🔧 WebSearch')
       })
@@ -233,7 +232,7 @@ describe('AgentLoop', () => {
       runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
         await context.onUpdate({
           kind: 'text_streaming',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Streaming response...',
           text: 'partial answer'
         })
@@ -244,7 +243,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const draftMessage = { channel: 'telegram' as const, chatId: '42', messageId: '88' }
+    const draftMessage = { channel: 'discord' as const, chatId: '42', messageId: '88' }
     const channelManager = {
       sendDirect: vi.fn(async () => undefined),
       sendDraftMessage: vi.fn(async () => draftMessage),
@@ -256,7 +255,7 @@ describe('AgentLoop', () => {
 
     const run = loop.start()
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -268,7 +267,7 @@ describe('AgentLoop', () => {
     // Should have sent partial text as a draft
     expect(channelManager.sendDraftMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        channel: 'telegram',
+        channel: 'discord',
         chatId: '42',
         content: expect.stringContaining('partial answer')
       })
@@ -294,14 +293,14 @@ describe('AgentLoop', () => {
       runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
         await context.onUpdate({
           kind: 'tool_call_started',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Using tool: Read',
           toolName: 'Read',
           toolUseId: 'tool-1'
         })
         await context.onUpdate({
           kind: 'text_streaming',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Streaming response...',
           text: 'streaming content'
         })
@@ -312,7 +311,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const toolMessage = { channel: 'telegram' as const, chatId: '42', messageId: '55' }
+    const toolMessage = { channel: 'discord' as const, chatId: '42', messageId: '55' }
     const channelManager = {
       sendDirect: vi.fn(async () => toolMessage),
       sendDraftMessage: vi.fn(async () => undefined),
@@ -324,7 +323,7 @@ describe('AgentLoop', () => {
 
     const run = loop.start()
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -349,7 +348,7 @@ describe('AgentLoop', () => {
       runTurn: vi.fn(async (_conversationKey: string, _input: string, context: any) => {
         await context.onUpdate({
           kind: 'tool_call_started',
-          conversationKey: 'telegram:42',
+          conversationKey: 'discord:42',
           message: 'Using tool: Read',
           toolName: 'Read',
           toolUseId: 'tool-2'
@@ -372,7 +371,7 @@ describe('AgentLoop', () => {
 
     const run = loop.start()
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -414,7 +413,7 @@ describe('AgentLoop', () => {
 
     // Send a regular message to start a turn
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: 'hello',
@@ -426,7 +425,7 @@ describe('AgentLoop', () => {
 
     // Send /stop while the turn is in progress
     await bus.publishInbound({
-      channel: 'telegram',
+      channel: 'discord',
       senderId: 'u1',
       chatId: '42',
       content: '/stop',
@@ -436,7 +435,7 @@ describe('AgentLoop', () => {
     // The /stop response should be sent
     const stopResponse = await bus.consumeOutbound()
     expect(stopResponse.content).toContain('Stopped')
-    expect(claude.cancelTurn).toHaveBeenCalledWith('telegram:42')
+    expect(claude.cancelTurn).toHaveBeenCalledWith('discord:42')
 
     // The cancelled turn should NOT produce a second outbound message
     const race = await Promise.race([

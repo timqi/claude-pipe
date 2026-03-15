@@ -39,7 +39,6 @@ function makeConfig() {
     },
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: { enabled: false, token: '', allowFrom: [] }
     },
     summaryPrompt: { enabled: true, template: 'Workspace: {{workspace}} Request: {{request}}' },
@@ -74,9 +73,9 @@ describe('ClaudeClient (subprocess stream-json)', () => {
       { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
     )
 
-    const turnPromise = client.runTurn('telegram:1', 'hello', {
+    const turnPromise = client.runTurn('discord-chat:1', 'hello', {
       workspace: '/tmp/workspace',
-      channel: 'telegram',
+      channel: 'discord',
       chatId: '1'
     })
     await vi.waitFor(() => expect(spawnMock).toHaveBeenCalledTimes(1))
@@ -111,7 +110,7 @@ describe('ClaudeClient (subprocess stream-json)', () => {
     expect(args).toContain('hello')
     expect(options.cwd).toBe('/tmp/workspace')
 
-    expect(store.set).toHaveBeenCalledWith('telegram:1', 'sess-new')
+    expect(store.set).toHaveBeenCalledWith('discord-chat:1', 'sess-new')
   })
 
   it('passes resume session id when available', async () => {
@@ -173,9 +172,9 @@ describe('ClaudeClient (subprocess stream-json)', () => {
       error: vi.fn()
     })
 
-    const turnPromise = client.runTurn('telegram:1', 'hello', {
+    const turnPromise = client.runTurn('discord-chat:1', 'hello', {
       workspace: '/tmp/workspace',
-      channel: 'telegram',
+      channel: 'discord',
       chatId: '1'
     })
     await vi.waitFor(() => expect(spawnMock).toHaveBeenCalledTimes(1))
@@ -210,9 +209,9 @@ describe('ClaudeClient (subprocess stream-json)', () => {
     const onUpdate = vi.fn(async () => undefined)
     const client = new ClaudeClient(makeConfig(), store as never, logger)
 
-    const turnPromise = client.runTurn('telegram:1', 'web search this', {
+    const turnPromise = client.runTurn('discord-chat:1', 'web search this', {
       workspace: '/tmp/workspace',
-      channel: 'telegram',
+      channel: 'discord',
       chatId: '1',
       onUpdate
     })
@@ -242,7 +241,7 @@ describe('ClaudeClient (subprocess stream-json)', () => {
     const text = await turnPromise
     expect(text).toBe('final answer')
     expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'turn_started', conversationKey: 'telegram:1' })
+      expect.objectContaining({ kind: 'turn_started', conversationKey: 'discord-chat:1' })
     )
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'tool_call_started', toolName: 'WebSearch', toolUseId: 'tool-1' })

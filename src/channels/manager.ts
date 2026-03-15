@@ -4,14 +4,12 @@ import type { FileAttachment, Logger, OutboundMessage, SentMessage } from '../co
 import type { Channel } from './base.js'
 import { CliChannel } from './cli.js'
 import { DiscordChannel } from './discord.js'
-import { TelegramChannel } from './telegram.js'
 
 /**
  * Owns channel adapter lifecycle and outbound message dispatching.
  */
 export class ChannelManager {
   private readonly channels: Channel[]
-  private readonly telegram: TelegramChannel
   private readonly discord: DiscordChannel
   private readonly cli: CliChannel
   private dispatcherRunning = false
@@ -21,10 +19,9 @@ export class ChannelManager {
     private readonly bus: MessageBus,
     private readonly logger: Logger
   ) {
-    this.telegram = new TelegramChannel(config, bus, logger)
     this.discord = new DiscordChannel(config, bus, logger)
     this.cli = new CliChannel(config, bus, logger)
-    this.channels = [this.telegram, this.discord, this.cli]
+    this.channels = [this.discord, this.cli]
   }
 
   /** Starts all adapters and launches outbound dispatcher. */

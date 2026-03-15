@@ -7,7 +7,7 @@ import type { CommandResult, PermissionLevel } from './types.js'
  * through the {@link CommandRegistry}.
  *
  * Supports both slash-style (`/help`) and platform-prefixed names
- * (`/session_new` on Telegram, `/session new` on Discord).
+ * (`/session_new` or `/session new` on Discord).
  */
 export class CommandHandler {
   constructor(
@@ -69,11 +69,11 @@ export class CommandHandler {
    *
    * Handles:
    *  - `/help`                → "help"
-   *  - `/session_new`         → "session_new"  (Telegram style)
+   *  - `/session_new`         → "session_new"  (underscore style)
    *  - `/session new`         → "session_new"  (two-word fallback)
    */
   /**
-   * Strips Telegram @bot suffix from the first token only.
+   * Strips @bot suffix from the first token only.
    * `/session_select@mybot 13bb` → `session_select 13bb`
    * `/session@mybot select 13bb` → `session select 13bb`
    * Preserves @ in arguments: `/ask how is @user` stays intact.

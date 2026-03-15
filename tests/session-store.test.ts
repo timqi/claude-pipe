@@ -13,14 +13,14 @@ describe('SessionStore', () => {
 
     const store = new SessionStore(path)
     await store.init()
-    await store.set('telegram:123', 'sess-abc')
+    await store.set('discord:123', 'sess-abc')
 
     const raw = JSON.parse(await readFile(path, 'utf-8')) as Record<string, { sessionId: string }>
-    expect(raw['telegram:123']?.sessionId).toBe('sess-abc')
+    expect(raw['discord:123']?.sessionId).toBe('sess-abc')
 
     const reloaded = new SessionStore(path)
     await reloaded.init()
-    expect(reloaded.get('telegram:123')?.sessionId).toBe('sess-abc')
+    expect(reloaded.get('discord:123')?.sessionId).toBe('sess-abc')
   })
 
   it('clears an existing session record', async () => {
@@ -29,12 +29,12 @@ describe('SessionStore', () => {
 
     const store = new SessionStore(path)
     await store.init()
-    await store.set('telegram:123', 'sess-abc')
-    await store.clear('telegram:123')
+    await store.set('discord:123', 'sess-abc')
+    await store.clear('discord:123')
 
-    expect(store.get('telegram:123')).toBeUndefined()
+    expect(store.get('discord:123')).toBeUndefined()
 
     const raw = JSON.parse(await readFile(path, 'utf-8')) as Record<string, { sessionId: string }>
-    expect(raw['telegram:123']).toBeUndefined()
+    expect(raw['discord:123']).toBeUndefined()
   })
 })

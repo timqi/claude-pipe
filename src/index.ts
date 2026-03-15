@@ -27,7 +27,7 @@ function isHelpMode(): boolean {
 /** Show help message */
 function showHelp(): void {
   console.log(
-    '\nClaude Pipe - Bot for Telegram and Discord using Claude Code CLI\n\n' +
+    '\nClaude Pipe - Bot for Discord using Claude Code CLI\n\n' +
       'Usage: claude-pipe [options]\n\n' +
       'Options:\n' +
       '  --reconfigure, -r  Reconfigure existing settings\n' +

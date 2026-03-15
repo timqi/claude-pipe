@@ -108,7 +108,6 @@ export function setupCommands(
         workspace: config.workspace,
         currentWorkspace,
         channels: [
-          ...(config.channels.telegram.enabled ? ['telegram'] : []),
           ...(config.channels.discord.enabled ? ['discord'] : []),
           ...(config.channels.cli?.enabled ? ['cli'] : [])
         ],
@@ -131,7 +130,6 @@ export function setupCommands(
   registry.register(helpCommand(registry))
 
   const adminIds = options.adminIds ?? [
-    ...config.channels.telegram.allowFrom,
     ...config.channels.discord.allowFrom
   ]
 

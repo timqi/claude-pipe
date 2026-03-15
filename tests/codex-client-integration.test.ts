@@ -13,7 +13,6 @@ function makeConfig() {
     model: 'gpt-5-codex',
     workspace: process.cwd(),
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: { enabled: false, token: '', allowFrom: [] }
     },
     summaryPrompt: { enabled: true, template: 'Workspace: {{workspace}} Request: {{request}}' },
@@ -50,9 +49,9 @@ describe('CodexClient integration (fake app-server subprocess)', () => {
 
     let text = ''
     try {
-      text = await client.runTurn('telegram:99', 'add logging to this function', {
+      text = await client.runTurn('discord-chat:99', 'add logging to this function', {
         workspace: process.cwd(),
-        channel: 'telegram',
+        channel: 'discord',
         chatId: '99',
         onUpdate: (u) => updates.push({ kind: u.kind, toolName: u.toolName, message: u.message })
       })
@@ -64,7 +63,7 @@ describe('CodexClient integration (fake app-server subprocess)', () => {
     }
 
     expect(text).toContain('Added logging')
-    expect(store.set).toHaveBeenCalledWith('telegram:99', 'thread-fake-1')
+    expect(store.set).toHaveBeenCalledWith('discord-chat:99', 'thread-fake-1')
     expect(
       updates.some((u) => u.kind === 'tool_call_started' && u.toolName === 'apply_patch')
     ).toBe(true)

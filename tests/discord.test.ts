@@ -9,7 +9,6 @@ function makeConfig(overrides?: { allowChannels?: string[] }): ClaudePipeConfig 
     model: 'claude-sonnet-4-5',
     workspace: '/tmp/workspace',
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: {
         enabled: true,
         token: 'discord-token',

@@ -7,7 +7,7 @@
 - LLM runtime: Claude Code CLI via subprocess (stream-json)
 
 ## 1. Product Summary
-Claude Pipe is a local, single-user TypeScript bot for Telegram and Discord using Claude Code CLI subprocesses with stream-json output for session management. Inspired by the architecture and patterns from [openclaw/openclaw](https://github.com/openclaw/openclaw).
+Claude Pipe is a local, single-user TypeScript bot for Discord using Claude Code CLI subprocesses with stream-json output for session management. Inspired by the architecture and patterns from [openclaw/openclaw](https://github.com/openclaw/openclaw).
 
 ## 2. Objective
 Deliver core agent behavior for:
@@ -20,11 +20,11 @@ Deliver core agent behavior for:
 The first release focuses on reliable local operation and parity for core flows.
 
 ## 3. Primary User Story
-As the bot owner, I send a Telegram message asking to summarize files in the workspace, and the bot reads workspace files and responds with a concise summary in the same channel.
+As the bot owner, I send a Discord message asking to summarize files in the workspace, and the bot reads workspace files and responds with a concise summary in the same channel.
 
 ## 4. Scope
 ### In Scope (v1)
-- Telegram + Discord channel support.
+- Discord channel support.
 - Reply to every inbound message.
 - Text-only message handling.
 - Per-channel conversation identity (`channel:chat_id`).
@@ -43,7 +43,7 @@ As the bot owner, I send a Telegram message asking to summarize files in the wor
 - advanced compliance constraints.
 
 ## 5. Functional Requirements
-1. Accept inbound messages from Telegram and Discord.
+1. Accept inbound messages from Discord.
 2. Normalize inbound events into one internal message format.
 3. Resolve a conversation key per channel/chat.
 4. Resume existing Claude session when available; otherwise create a new session.
@@ -65,7 +65,7 @@ As the bot owner, I send a Telegram message asking to summarize files in the wor
 - No hard limits on latency/throughput/cost in v1.
 
 ## 8. High-Level Architecture
-- `channels/`: Telegram and Discord adapters.
+- `channels/`: Discord adapter.
 - `core/bus`: inbound/outbound event routing.
 - `core/agent-loop`: orchestration loop.
 - `core/claude-client`: CLI subprocess wrapper with stream-json parsing.
@@ -78,7 +78,7 @@ As the bot owner, I send a Telegram message asking to summarize files in the wor
 
 ```json
 {
-  "telegram:123456": {
+  "discord:123456": {
     "sessionId": "sess_abc",
     "updatedAt": "2026-02-08T12:00:00Z"
   }
@@ -93,9 +93,9 @@ Optional transcript logging to JSONL for debugging (disabled by default).
 - Full permissions increase operational risk by design (accepted for v1).
 
 ## 11. Success Criteria
-- Telegram and Discord both respond to inbound text messages.
+- Discord responds to inbound text messages.
 - Session continuity works across restarts through session map persistence.
-- Workspace summarization scenario works end-to-end from Telegram.
+- Workspace summarization scenario works end-to-end from Discord.
 - CLI tool calls are parsed correctly and progress updates flow to channels.
 
 ## 12. Milestones

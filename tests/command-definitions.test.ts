@@ -20,10 +20,10 @@ import type { CommandContext } from '../src/commands/types.js'
 
 function makeCtx(overrides?: Partial<CommandContext>): CommandContext {
   return {
-    channel: 'telegram',
+    channel: 'discord',
     chatId: '42',
     senderId: 'u1',
-    conversationKey: 'telegram:42',
+    conversationKey: 'discord:42',
     args: [],
     rawArgs: '',
     ...overrides
@@ -63,7 +63,7 @@ describe('Session commands', () => {
 
     const result = await cmd.execute(makeCtx())
     expect(result.content).toContain('New session started')
-    expect(startNew).toHaveBeenCalledWith('telegram:42')
+    expect(startNew).toHaveBeenCalledWith('discord:42')
   })
 
   it('/session_list returns workspace session listing', async () => {
@@ -95,7 +95,7 @@ describe('Session commands', () => {
     const result = await cmd.execute(makeCtx({ args: ['abcdef12'], rawArgs: 'abcdef12' }))
     expect(result.content).toContain('Session: abcdef12')
     expect(result.content).toContain('fix the login bug')
-    expect(setSession).toHaveBeenCalledWith('telegram:42', sampleSession.sessionId)
+    expect(setSession).toHaveBeenCalledWith('discord:42', sampleSession.sessionId)
   })
 
   it('/session_select returns error for no match', async () => {
@@ -120,7 +120,7 @@ describe('Session commands', () => {
     const result = await cmd.execute(makeCtx())
     expect(result.content).toContain('deleted')
     expect(service.delete).toHaveBeenCalledWith('/tmp/workspace', sampleSession.sessionId)
-    expect(clearSession).toHaveBeenCalledWith('telegram:42')
+    expect(clearSession).toHaveBeenCalledWith('discord:42')
   })
 
   it('/session_delete with session ID deletes that session', async () => {
@@ -185,22 +185,22 @@ describe('Utility commands', () => {
       model: 'claude-sonnet-4-5',
       workspace: '/tmp/test',
       currentWorkspace: '/tmp/test',
-      channels: ['telegram', 'discord'],
+      channels: ['discord'],
       sessionInfo: sampleSession,
-      activeTurns: [{ conversationKey: 'telegram:99', prompt: 'write a test' }]
+      activeTurns: [{ conversationKey: 'discord:99', prompt: 'write a test' }]
     }))
 
     const result = await cmd.execute(makeCtx())
     expect(result.content).toContain('claude-sonnet-4-5')
     expect(result.content).toContain('/tmp/test')
-    expect(result.content).toContain('telegram, discord')
+    expect(result.content).toContain('discord')
     // Session info
     expect(result.content).toContain('abcdef12')
     expect(result.content).toContain('fix the login bug')
     expect(result.content).toContain('5 user / 30 assistant')
     // Active turns
     expect(result.content).toContain('Running: 1')
-    expect(result.content).toContain('telegram:99')
+    expect(result.content).toContain('discord:99')
     expect(result.content).toContain('write a test')
   })
 
@@ -209,7 +209,7 @@ describe('Utility commands', () => {
       model: 'claude-sonnet-4-5',
       workspace: '/tmp/test',
       currentWorkspace: '/tmp/test',
-      channels: ['telegram'],
+      channels: ['discord'],
       sessionInfo: undefined,
       activeTurns: []
     }))
@@ -233,7 +233,7 @@ describe('Claude commands', () => {
 
     const result = await cmd.execute(makeCtx({ rawArgs: 'hello world', args: ['hello', 'world'] }))
     expect(result.content).toBe('Claude says hello')
-    expect(runTurn).toHaveBeenCalledWith('telegram:42', 'hello world', 'telegram', '42')
+    expect(runTurn).toHaveBeenCalledWith('discord:42', 'hello world', 'discord', '42')
   })
 
   it('/claude_ask with no prompt returns usage error', async () => {

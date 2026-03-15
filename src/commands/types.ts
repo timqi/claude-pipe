@@ -56,8 +56,7 @@ export interface CommandDefinition {
 }
 
 /**
- * Serializable metadata used for Discord slash command registration
- * and Telegram BotFather `/setcommands`.
+ * Serializable metadata used for Discord slash command registration.
  */
 export interface CommandMeta {
   name: string
@@ -67,6 +66,4 @@ export interface CommandMeta {
   group?: string
   /** Positional arguments for Discord slash command options. */
   args?: CommandArg[]
-  /** Telegram-style command name with underscores (e.g. "session_new"). */
-  telegramName: string
 }

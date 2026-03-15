@@ -10,7 +10,6 @@ function makeConfig(): ClaudePipeConfig {
     model: 'claude-sonnet-4-5',
     workspace: '/Users/mg/workspace',
     channels: {
-      telegram: { enabled: false, token: '', allowFrom: [] },
       discord: { enabled: true, token: 'DTKN', allowFrom: ['u1'] }
     },
     tools: { execTimeoutSec: 60 },
