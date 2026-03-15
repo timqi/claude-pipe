@@ -22,6 +22,15 @@ const DISCORD_MESSAGE_MAX = 1800
 const SEND_RETRY_ATTEMPTS = 3
 const SEND_RETRY_BACKOFF_MS = 200
 
+/** Separates the status footer (e.g. `\n\n-# 22:39:48 · Done`) from body text. */
+const FOOTER_RE = /\n\n-# \d{2}:\d{2}:\d{2} · .+$/
+
+function splitFooter(content: string): { body: string; footer: string } {
+  const match = FOOTER_RE.exec(content)
+  if (!match) return { body: content, footer: '' }
+  return { body: content.slice(0, match.index), footer: match[0] }
+}
+
 /**
  * Discord adapter using discord.js gateway client + channel send API.
  */
@@ -30,6 +39,8 @@ export class DiscordChannel implements Channel {
   private client: Client | null = null
   /** Pending deferred interactions keyed by chatId, so send() can resolve them. */
   private pendingInteractions = new Map<string, ChatInputCommandInteraction>()
+  /** Tracks overflow chunk message IDs per primary message, so editMessage can clean them up. */
+  private overflowMessages = new Map<string, string[]>()
 
   constructor(
     private readonly config: ClaudePipeConfig,
@@ -134,9 +145,14 @@ export class DiscordChannel implements Channel {
       this.pendingInteractions.delete(message.chatId)
     }
 
-    let lastMessageId: string | undefined
+    const { body, footer } = splitFooter(message.content)
+    const chunks = chunkText(body, DISCORD_MESSAGE_MAX)
+
+    let primaryMessageId: string | undefined
+    const overflowIds: string[] = []
     let isFirstChunk = true
-    for (const part of chunkText(message.content, DISCORD_MESSAGE_MAX)) {
+    for (let i = 0; i < chunks.length; i++) {
+      const part = i === chunks.length - 1 ? chunks[i]! + footer : chunks[i]!
       try {
         await retry(
           async () => {
@@ -145,12 +161,14 @@ export class DiscordChannel implements Channel {
             if (isFirstChunk && pendingInteraction) {
               const sent = await pendingInteraction.editReply({ content: part, flags: MessageFlags.SuppressEmbeds })
               if (sent && typeof sent === 'object' && 'id' in sent) {
-                lastMessageId = String(sent.id)
+                primaryMessageId = String(sent.id)
               }
             } else {
               const sent = await channel.send({ content: part, flags: MessageFlags.SuppressEmbeds })
               if (sent && typeof sent === 'object' && 'id' in sent) {
-                lastMessageId = String(sent.id)
+                const id = String(sent.id)
+                if (!primaryMessageId) primaryMessageId = id
+                else overflowIds.push(id)
               }
             }
             isFirstChunk = false
@@ -169,29 +187,52 @@ export class DiscordChannel implements Channel {
       }
     }
 
-    if (lastMessageId) {
-      return { channel: 'discord', chatId: message.chatId, messageId: lastMessageId }
+    if (primaryMessageId) {
+      if (overflowIds.length > 0) {
+        this.overflowMessages.set(primaryMessageId, overflowIds)
+      }
+      return { channel: 'discord', chatId: message.chatId, messageId: primaryMessageId }
     }
   }
 
-  /** Edits a previously sent Discord message, sending overflow as new messages. */
+  /** Edits a previously sent Discord message, deleting old overflow and sending new overflow as needed. */
   async editMessage(sent: SentMessage, newContent: string): Promise<void> {
     if (!this.client || !this.config.channels.discord.enabled) return
 
     const channel = await this.client.channels.fetch(sent.chatId)
     if (!channel || !channel.isTextBased()) return
 
-    const chunks = chunkText(newContent, DISCORD_MESSAGE_MAX)
+    // Delete previous overflow messages before re-editing
+    const oldOverflow = this.overflowMessages.get(sent.messageId)
+    if (oldOverflow && 'messages' in channel && channel.messages) {
+      for (const id of oldOverflow) {
+        try { await channel.messages.delete(id) } catch { /* already deleted or inaccessible */ }
+      }
+      this.overflowMessages.delete(sent.messageId)
+    }
+
+    const { body, footer } = splitFooter(newContent)
+    const chunks = chunkText(body, DISCORD_MESSAGE_MAX)
+    const last = chunks.length - 1
     try {
       if ('messages' in channel && channel.messages) {
         const msg = await channel.messages.fetch(sent.messageId)
-        await msg.edit({ content: chunks[0] ?? newContent })
+        const firstContent = chunks.length === 1 ? (chunks[0] ?? body) + footer : (chunks[0] ?? body)
+        await msg.edit({ content: firstContent })
       }
-      // Send remaining chunks as new messages
+      // Send remaining chunks as new messages and track their IDs
+      const newOverflow: string[] = []
       if ('send' in channel && typeof channel.send === 'function') {
         for (let i = 1; i < chunks.length; i++) {
-          await channel.send({ content: chunks[i]!, flags: MessageFlags.SuppressEmbeds })
+          const part = i === last ? chunks[i]! + footer : chunks[i]!
+          const overflow = await channel.send({ content: part, flags: MessageFlags.SuppressEmbeds })
+          if (overflow && typeof overflow === 'object' && 'id' in overflow) {
+            newOverflow.push(String(overflow.id))
+          }
         }
+      }
+      if (newOverflow.length > 0) {
+        this.overflowMessages.set(sent.messageId, newOverflow)
       }
     } catch (error) {
       this.logger.error('channel.discord.edit_failed', {

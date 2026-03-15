@@ -108,7 +108,16 @@ export function sessionSelectCommand(
         return { content: 'Failed to read session details.', error: true }
       }
       await setSession(ctx.conversationKey, resolved.id)
-      return { content: formatSessionInfo(session) }
+      const history = await sessionService.recentHistory(workspace, resolved.id, 3)
+      const parts = [formatSessionInfo(session)]
+      if (history.length > 0) {
+        parts.push('', '**Recent history:**')
+        for (const entry of history) {
+          const label = entry.role === 'user' ? '**User:**' : '**Claude:**'
+          parts.push(`${label}\n${entry.text}`)
+        }
+      }
+      return { content: parts.join('\n') }
     }
   }
 }

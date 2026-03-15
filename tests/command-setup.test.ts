@@ -36,7 +36,8 @@ function makeDeps(): CommandDependencies {
   const claudeSessionService = {
     list: vi.fn(async () => []),
     get: vi.fn(async () => undefined),
-    resolve: vi.fn(async () => ({ error: 'not found' }))
+    resolve: vi.fn(async () => ({ error: 'not found' })),
+    recentHistory: vi.fn(async () => [])
   }
 
   return { config, claude: claude as never, sessionStore: sessionStore as never, claudeSessionService }

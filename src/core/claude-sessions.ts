@@ -12,9 +12,15 @@ export interface ClaudeSessionSummary {
   assistantMessageCount: number
 }
 
+export interface ConversationEntry {
+  role: 'user' | 'assistant'
+  text: string
+}
+
 export interface ClaudeSessionService {
   list(workspace: string): Promise<ClaudeSessionSummary[]>
   get(workspace: string, sessionIdOrPrefix: string): Promise<ClaudeSessionSummary | undefined>
+  recentHistory(workspace: string, sessionId: string, count?: number): Promise<ConversationEntry[]>
   resolve(workspace: string, prefix: string): Promise<{ id: string } | { error: string }>
   delete(workspace: string, sessionId: string): Promise<void>
 }
@@ -41,20 +47,84 @@ function hasTextContent(content: unknown): boolean {
   return false
 }
 
+function stripXmlTags(text: string): string {
+  return text.replace(/<[^>]+>/g, '').trim()
+}
+
 function extractTextFromContent(content: unknown): string | undefined {
-  if (typeof content === 'string' && content.length > 0) return content.slice(0, 80)
-  if (Array.isArray(content)) {
+  let raw: string | undefined
+  if (typeof content === 'string' && content.length > 0) {
+    raw = content
+  } else if (Array.isArray(content)) {
     for (const block of content) {
-      if (typeof block === 'string' && block.length > 0) return block.slice(0, 80)
+      if (typeof block === 'string' && block.length > 0) { raw = block; break }
       if (
         block !== null && typeof block === 'object' &&
         block.type === 'text' && typeof block.text === 'string' && block.text.length > 0
-      ) {
-        return (block.text as string).slice(0, 80)
-      }
+      ) { raw = block.text as string; break }
     }
   }
-  return undefined
+  if (!raw) return undefined
+  const cleaned = stripXmlTags(raw).replace(/\s+/g, ' ')
+  return cleaned.length > 0 ? cleaned.slice(0, 80) : undefined
+}
+
+function extractFullText(content: unknown): string {
+  const parts: string[] = []
+  if (typeof content === 'string') {
+    parts.push(content)
+  } else if (Array.isArray(content)) {
+    for (const block of content) {
+      if (typeof block === 'string') { parts.push(block); continue }
+      if (
+        block !== null && typeof block === 'object' &&
+        block.type === 'text' && typeof block.text === 'string'
+      ) { parts.push(block.text as string) }
+    }
+  }
+  return stripXmlTags(parts.join('\n'))
+}
+
+function isToolResultContent(content: unknown): boolean {
+  if (!Array.isArray(content)) return false
+  return content.some((b) => b !== null && typeof b === 'object' && b.type === 'tool_result')
+}
+
+function extractRecentHistory(lines: string[], count: number): ConversationEntry[] {
+  // Collect real user/assistant messages, skipping tool_result/tool_use entries.
+  // Stop once we have enough user messages (each may have a paired assistant response).
+  const entries: ConversationEntry[] = []
+  let userCount = 0
+  for (let i = lines.length - 1; i >= 0 && userCount < count; i--) {
+    try {
+      const obj = JSON.parse(lines[i]!)
+      if (obj.type === 'user') {
+        if (isToolResultContent(obj.message?.content)) continue
+        if (!hasTextContent(obj.message?.content)) continue
+        const text = extractFullText(obj.message?.content)
+        if (text) { entries.push({ role: 'user', text }); userCount++ }
+      } else if (obj.type === 'assistant') {
+        if (!hasTextContent(obj.message?.content)) continue
+        const text = extractFullText(obj.message?.content)
+        if (text) entries.push({ role: 'assistant', text })
+      }
+    } catch {
+      // skip malformed lines
+    }
+  }
+  // Reverse to chronological order, then take last `count` pairs
+  entries.reverse()
+  // Find the start of the last N pairs (each pair = user + assistant)
+  let pairCount = 0
+  let startIdx = entries.length
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i]!.role === 'user') {
+      pairCount++
+      startIdx = i
+      if (pairCount >= count) break
+    }
+  }
+  return entries.slice(startIdx)
 }
 
 function extractRecentUserMessages(lines: string[], count = 3): string {
@@ -200,6 +270,17 @@ export function createClaudeSessionService(): ClaudeSessionService {
         return parseSession(result.id, raw)
       } catch {
         return undefined
+      }
+    },
+
+    async recentHistory(workspace: string, sessionId: string, count = 3): Promise<ConversationEntry[]> {
+      const dir = getClaudeProjectDir(workspace)
+      try {
+        const raw = await readFile(path.join(dir, `${sessionId}.jsonl`), 'utf-8')
+        const lines = raw.split('\n').filter(Boolean)
+        return extractRecentHistory(lines, count)
+      } catch {
+        return []
       }
     },
 

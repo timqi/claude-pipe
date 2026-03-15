@@ -50,6 +50,10 @@ function mockSessionService(sessions: ClaudeSessionSummary[] = [sampleSession]):
       if (matches.length === 0) return { error: `No session matching "${prefix}".` }
       return { error: `Ambiguous prefix "${prefix}".` }
     }),
+    recentHistory: vi.fn(async () => [
+      { role: 'user' as const, text: 'fix the login bug' },
+      { role: 'assistant' as const, text: 'I found the issue in auth.ts' }
+    ]),
     delete: vi.fn(async () => undefined)
   }
 }
