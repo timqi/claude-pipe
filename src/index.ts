@@ -12,6 +12,7 @@ import { createModelClient } from './core/client-factory.js'
 import { createHeartbeat } from './core/heartbeat.js'
 import { logger, setLoggerMuted, setLogLevel } from './core/logger.js'
 import { SessionStore } from './core/session-store.js'
+import { WorkspaceStore } from './core/workspace-store.js'
 import { runOnboarding } from './onboarding/wizard.js'
 
 /** Check if --reconfigure flag was passed */
@@ -82,6 +83,18 @@ async function main(): Promise<void> {
   const sessionStore = new SessionStore(config.sessionStorePath)
   await sessionStore.init()
 
+  const configDir = getConfigDir()
+  const workspaceStore = new WorkspaceStore(path.join(configDir, 'workspaces.json'))
+  await workspaceStore.init()
+
+  // Migrate channelWorkspaces from settings.json if workspaces.json is empty
+  const settings = readSettings()
+  const legacyWorkspaces = (settings as unknown as Record<string, unknown>).channelWorkspaces
+  if (legacyWorkspaces && typeof legacyWorkspaces === 'object') {
+    await workspaceStore.importFrom(legacyWorkspaces as Record<string, string>)
+    logger.info('startup.workspace_migrated', { count: Object.keys(legacyWorkspaces).length })
+  }
+
   logger.warn('startup.config', {
     workspace: config.workspace,
     model: config.model,
@@ -89,12 +102,12 @@ async function main(): Promise<void> {
   })
 
   const modelClient = createModelClient(config, sessionStore, logger)
-  const agent = new AgentLoop(bus, config, modelClient, logger)
+  const agent = new AgentLoop(bus, config, modelClient, logger, workspaceStore)
   const channels = new ChannelManager(config, bus, logger)
   const heartbeat = createHeartbeat(config, bus, logger)
 
   const claudeSessionService = createClaudeSessionService()
-  const { handler } = setupCommands({ config, claude: modelClient, sessionStore, claudeSessionService })
+  const { handler } = setupCommands({ config, claude: modelClient, sessionStore, claudeSessionService, workspaceStore })
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)
 

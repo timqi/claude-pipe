@@ -22,7 +22,6 @@ const cliChannelSchema = z.object({
 export const configSchema = z.object({
   model: z.string(),
   workspace: z.string(),
-  channelWorkspaces: z.record(z.string(), z.string()).optional(),
   channels: z.object({
     discord: discordChannelSchema,
     cli: cliChannelSchema.optional()

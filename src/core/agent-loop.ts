@@ -6,6 +6,7 @@ import { MessageBus } from './bus.js'
 import type { ModelClient } from './model-client.js'
 import type { AgentTurnUpdate, ChannelName, FileAttachment, InboundMessage, Logger, SentMessage } from './types.js'
 import { resolveWorkspace } from './workspace.js'
+import type { WorkspaceStore } from './workspace-store.js'
 
 /** Truncates a tool detail string to fit in a chat status line. */
 function truncateDetail(value: string, max: number): string {
@@ -52,7 +53,8 @@ export class AgentLoop {
     private readonly bus: MessageBus,
     private readonly config: ClaudePipeConfig,
     private readonly client: ModelClient,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly workspaceStore?: WorkspaceStore
   ) {}
 
   /** Attaches a command handler for slash-command interception. */
@@ -152,7 +154,7 @@ export class AgentLoop {
       senderId: inbound.senderId
     })
 
-    const workspace = resolveWorkspace(this.config, conversationKey)
+    const workspace = resolveWorkspace(this.config, conversationKey, this.workspaceStore)
 
     const modelInput = applySummaryTemplate(
       inbound.content,

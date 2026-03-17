@@ -24,7 +24,7 @@ if (!config.channels.discord.enabled) {
   process.exit(1)
 }
 
-const { registry } = setupCommands({ config, claude: null!, sessionStore: null!, claudeSessionService: createClaudeSessionService() })
+const { registry } = setupCommands({ config, claude: null!, sessionStore: null!, claudeSessionService: createClaudeSessionService(), workspaceStore: null! })
 
 await DiscordChannel.registerSlashCommands(
   config.channels.discord.token,

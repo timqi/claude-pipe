@@ -3,6 +3,7 @@ import { loadConfig } from '../config/load.js'
 import type { ClaudeSessionService } from '../core/claude-sessions.js'
 import type { ModelClient } from '../core/model-client.js'
 import type { SessionStore } from '../core/session-store.js'
+import type { WorkspaceStore } from '../core/workspace-store.js'
 import { resolveWorkspace } from '../core/workspace.js'
 import {
   sessionClearCommand,
@@ -13,6 +14,7 @@ import {
 import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
+import { workspaceCommand } from './definitions/workspace.js'
 import { CommandHandler } from './handler.js'
 import { CommandRegistry } from './registry.js'
 import type { CommandDefinition } from './types.js'
@@ -25,6 +27,7 @@ export interface CommandDependencies {
   claude: ModelClient
   sessionStore: SessionStore
   claudeSessionService: ClaudeSessionService
+  workspaceStore: WorkspaceStore
 }
 
 /**
@@ -47,9 +50,9 @@ export function setupCommands(
   deps: CommandDependencies,
   options: SetupCommandsOptions = {}
 ): { registry: CommandRegistry; handler: CommandHandler } {
-  const { config, claude, sessionStore, claudeSessionService } = deps
+  const { config, claude, sessionStore, claudeSessionService, workspaceStore } = deps
   const registry = new CommandRegistry()
-  const getWorkspace = (key: string): string => resolveWorkspace(config, key)
+  const getWorkspace = (key: string): string => resolveWorkspace(config, key, workspaceStore)
 
   // --- Session commands ---
   registry.register(sessionClearCommand((key) => claude.startNewSession(key)))
@@ -69,7 +72,7 @@ export function setupCommands(
   registry.register(
     claudeAskCommand(async (conversationKey, prompt, channel, chatId) =>
       claude.runTurn(conversationKey, prompt, {
-        workspace: resolveWorkspace(config, conversationKey),
+        workspace: resolveWorkspace(config, conversationKey, workspaceStore),
         channel,
         chatId
       })
@@ -94,10 +97,13 @@ export function setupCommands(
     })
   )
 
+  // --- Workspace command ---
+  registry.register(workspaceCommand(workspaceStore, config.workspace))
+
   // --- Utility commands ---
   registry.register(
     statusCommand(async (conversationKey) => {
-      const currentWorkspace = resolveWorkspace(config, conversationKey)
+      const currentWorkspace = resolveWorkspace(config, conversationKey, workspaceStore)
       const currentSessionId = sessionStore.get(conversationKey)?.sessionId
       let sessionInfo = undefined
       if (currentSessionId) {
