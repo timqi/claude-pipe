@@ -20,14 +20,7 @@ const cliChannelSchema = z.object({
  * Runtime configuration schema for Claude Pipe.
  */
 export const configSchema = z.object({
-  llmProvider: z.enum(['claude', 'codex']).default('claude'),
   model: z.string(),
-  claudeCli: z
-    .object({
-      command: z.string().default('claude'),
-      args: z.array(z.string()).default([])
-    })
-    .optional(),
   workspace: z.string(),
   channelWorkspaces: z.record(z.string(), z.string()).optional(),
   channels: z.object({

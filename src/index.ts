@@ -8,7 +8,7 @@ import { getConfigDir, readSettings, settingsExist } from './config/settings.js'
 import { AgentLoop } from './core/agent-loop.js'
 import { MessageBus } from './core/bus.js'
 import { createClaudeSessionService } from './core/claude-sessions.js'
-import { createModelClient, resolveProviderFromConfig } from './core/client-factory.js'
+import { createModelClient } from './core/client-factory.js'
 import { createHeartbeat } from './core/heartbeat.js'
 import { logger, setLoggerMuted, setLogLevel } from './core/logger.js'
 import { SessionStore } from './core/session-store.js'
@@ -85,7 +85,7 @@ async function main(): Promise<void> {
   logger.warn('startup.config', {
     workspace: config.workspace,
     model: config.model,
-    provider: resolveProviderFromConfig(config)
+    provider: 'claude'
   })
 
   const modelClient = createModelClient(config, sessionStore, logger)

@@ -95,7 +95,7 @@ export function statusCommand(
         lines.push('', 'No active session.')
       }
 
-      // Active turns (running claude/codex processes)
+      // Active turns (running claude processes)
       if (status.activeTurns.length > 0) {
         lines.push('', `**Running: ${status.activeTurns.length}**`)
         for (const turn of status.activeTurns) {

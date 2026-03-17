@@ -182,8 +182,8 @@ export class ClaudeClient implements ModelClient {
     context: ToolContext
   ): Promise<string> {
     const savedSession = this.store.get(conversationKey)
-    const executable = this.config.claudeCli?.command?.trim() || getClaudeCodeExecutablePath()
-    const args = [...(this.config.claudeCli?.args ?? defaultClaudeArgs), '--model', this.config.model]
+    const executable = getClaudeCodeExecutablePath()
+    const args = [...defaultClaudeArgs, '--model', this.config.model]
 
     args.push('--append-system-prompt', buildSystemPrompt(this.config))
 

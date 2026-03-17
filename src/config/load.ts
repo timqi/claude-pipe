@@ -4,159 +4,79 @@ import * as path from 'node:path'
 import { getConfigDir, readSettings, settingsExist } from './settings.js'
 import { configSchema, type ClaudePipeConfig } from './schema.js'
 
-/** Parses comma-separated allow-list env values. */
-function parseCsv(input: string | undefined): string[] {
-  if (!input) return []
-  return input
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
-function parseSpaceSeparatedArgs(input: string | undefined): string[] | undefined {
-  if (!input) return undefined
-  const trimmed = input.trim()
-  if (!trimmed) return []
-  if (trimmed.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(trimmed) as unknown
-      if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) return parsed
-    } catch {
-      // Fall through to plain split.
-    }
-  }
-  return trimmed.split(/\s+/).filter(Boolean)
-}
-
 /**
- * Loads runtime configuration.
+ * Loads runtime configuration from `~/.claude-pipe/settings.json`.
  *
- * If a `~/.claude-pipe/settings.json` file exists it takes priority.
- * Otherwise falls back to the legacy `.env` / environment-variable path.
+ * Environment variables from `~/.claude-pipe/.env` and local `.env` are loaded
+ * for secrets (e.g. DISCORD_TOKEN) but all other config comes from settings.json.
  */
 export function loadConfig(): ClaudePipeConfig {
   const defaultSummaryTemplate =
     'Workspace: {{workspace}}\n' +
     'Request: {{request}}\n' +
     'Provide a concise summary with key files and actionable insights.'
-  const defaultClaudeArgs = [
-    '--print',
-    '--verbose',
-    '--output-format',
-    'stream-json',
-    '--permission-mode',
-    'bypassPermissions',
-    '--dangerously-skip-permissions'
-  ]
 
-  // Load env from ~/.claude-pipe/.env first, then local .env as a legacy fallback.
+  // Load env from ~/.claude-pipe/.env first, then local .env for secrets.
   loadEnv({ path: path.join(getConfigDir(), '.env') })
   loadEnv()
 
-  if (settingsExist()) {
-    const s = readSettings()
+  if (!settingsExist()) {
+    throw new Error(
+      'No settings.json found. Run `claude-pipe --reconfigure` to create one.'
+    )
+  }
 
-    // Apply env vars from settings to process.env (don't override existing vars)
-    if (s.env) {
-      for (const [key, value] of Object.entries(s.env)) {
-        if (process.env[key] === undefined) {
-          process.env[key] = value
-        }
+  const s = readSettings()
+
+  // Apply env vars from settings to process.env (don't override existing vars)
+  if (s.env) {
+    for (const [key, value] of Object.entries(s.env)) {
+      if (process.env[key] === undefined) {
+        process.env[key] = value
       }
     }
-
-    if ((s.channel as string) === 'telegram') {
-      throw new Error(
-        'Telegram is no longer supported. Run `claude-pipe --reconfigure` to choose Discord or CLI.'
-      )
-    }
-
-    const llmProvider = s.provider ?? 'claude'
-
-    const discordEnabled = s.channel === 'discord'
-    const cliEnabled = s.channel === 'cli'
-
-    const configDir = getConfigDir()
-
-    return configSchema.parse({
-      llmProvider,
-      model: s.model,
-      claudeCli: {
-        command: s.claudeCli?.command?.trim() || 'claude',
-        args: s.claudeCli?.args ?? defaultClaudeArgs
-      },
-      workspace: s.workspace,
-      channelWorkspaces: s.channelWorkspaces,
-      channels: {
-        discord: {
-          enabled: discordEnabled,
-          token: discordEnabled ? s.token : '',
-          allowFrom: discordEnabled ? s.allowFrom : [],
-          allowChannels: discordEnabled ? s.allowChannels : undefined
-        },
-        cli: {
-          enabled: cliEnabled || process.env.CLAUDEPIPE_CLI_ENABLED === 'true',
-          allowFrom: cliEnabled ? s.allowFrom : parseCsv(process.env.CLAUDEPIPE_CLI_ALLOW_FROM)
-        }
-      },
-      summaryPrompt: {
-        enabled: true,
-        template: defaultSummaryTemplate
-      },
-      personality: s.personality,
-      sessionStorePath: path.join(configDir, 'sessions.json'),
-      transcriptLog: {
-        enabled: s.transcriptLog?.enabled ?? false,
-        path: s.transcriptLog?.path ?? path.join(configDir, 'transcript.jsonl'),
-        maxBytes: s.transcriptLog?.maxBytes ?? 1_000_000,
-        maxFiles: s.transcriptLog?.maxFiles ?? 3
-      },
-      logLevel: s.logLevel ?? 'verbose',
-      maxToolIterations: 20
-    })
   }
+
+  if ((s.channel as string) === 'telegram') {
+    throw new Error(
+      'Telegram is no longer supported. Run `claude-pipe --reconfigure` to choose Discord or CLI.'
+    )
+  }
+
+  const discordEnabled = s.channel === 'discord'
+  const cliEnabled = s.channel === 'cli'
 
   const configDir = getConfigDir()
 
   return configSchema.parse({
-    llmProvider:
-      process.env.CLAUDEPIPE_LLM_PROVIDER === 'codex' ? 'codex' : 'claude',
-    model: process.env.CLAUDEPIPE_MODEL ?? '',
-    claudeCli: {
-      command: process.env.CLAUDEPIPE_CLAUDE_COMMAND?.trim() || 'claude',
-      args: parseSpaceSeparatedArgs(process.env.CLAUDEPIPE_CLAUDE_ARGS) ?? defaultClaudeArgs
-    },
-    workspace: process.env.CLAUDEPIPE_WORKSPACE ?? process.cwd(),
+    model: s.model,
+    workspace: s.workspace,
+    channelWorkspaces: s.channelWorkspaces,
     channels: {
       discord: {
-        enabled: process.env.CLAUDEPIPE_DISCORD_ENABLED === 'true',
-        token: process.env.CLAUDEPIPE_DISCORD_TOKEN ?? '',
-        allowFrom: parseCsv(process.env.CLAUDEPIPE_DISCORD_ALLOW_FROM),
-        allowChannels: parseCsv(process.env.CLAUDEPIPE_DISCORD_ALLOW_CHANNELS)
+        enabled: discordEnabled,
+        token: discordEnabled ? s.token : '',
+        allowFrom: discordEnabled ? s.allowFrom : [],
+        allowChannels: discordEnabled ? s.allowChannels : undefined
       },
       cli: {
-        enabled: process.env.CLAUDEPIPE_CLI_ENABLED === 'true',
-        allowFrom: parseCsv(process.env.CLAUDEPIPE_CLI_ALLOW_FROM)
+        enabled: cliEnabled,
+        allowFrom: cliEnabled ? s.allowFrom : []
       }
     },
     summaryPrompt: {
-      enabled: process.env.CLAUDEPIPE_SUMMARY_PROMPT_ENABLED !== 'false',
-      template: process.env.CLAUDEPIPE_SUMMARY_PROMPT_TEMPLATE ?? defaultSummaryTemplate
+      enabled: true,
+      template: defaultSummaryTemplate
     },
+    personality: s.personality,
+    sessionStorePath: path.join(configDir, 'sessions.json'),
     transcriptLog: {
-      enabled: process.env.CLAUDEPIPE_TRANSCRIPT_LOG_ENABLED === 'true',
-      path:
-        process.env.CLAUDEPIPE_TRANSCRIPT_LOG_PATH ?? path.join(configDir, 'transcript.jsonl'),
-      maxBytes: process.env.CLAUDEPIPE_TRANSCRIPT_LOG_MAX_BYTES
-        ? Number(process.env.CLAUDEPIPE_TRANSCRIPT_LOG_MAX_BYTES)
-        : 1_000_000,
-      maxFiles: process.env.CLAUDEPIPE_TRANSCRIPT_LOG_MAX_FILES
-        ? Number(process.env.CLAUDEPIPE_TRANSCRIPT_LOG_MAX_FILES)
-        : 3
+      enabled: s.transcriptLog?.enabled ?? false,
+      path: s.transcriptLog?.path ?? path.join(configDir, 'transcript.jsonl'),
+      maxBytes: s.transcriptLog?.maxBytes ?? 1_000_000,
+      maxFiles: s.transcriptLog?.maxFiles ?? 3
     },
-    sessionStorePath:
-      process.env.CLAUDEPIPE_SESSION_STORE_PATH ?? path.join(configDir, 'sessions.json'),
-    logLevel: (process.env.CLAUDEPIPE_LOG_LEVEL as 'verbose' | 'status' | 'off') ?? 'verbose',
-    maxToolIterations: Number(process.env.CLAUDEPIPE_MAX_TOOL_ITERATIONS ?? 20)
+    logLevel: s.logLevel ?? 'verbose',
+    maxToolIterations: 20
   })
 }
