@@ -185,7 +185,11 @@ export function setupCommands(
   // --- Utility commands ---
   registry.register(statusCommand(getStatus))
   registry.register(pingCommand())
-  registry.register(reloadCommand(config, loadConfig))
+  registry.register(reloadCommand(config, loadConfig, {
+    ...(deps.reloadCronScheduler ? { cronScheduler: deps.reloadCronScheduler } : {}),
+    sessionStore: () => sessionStore.init(),
+    workspaceStore: () => workspaceStore.init(),
+  }))
   registry.register(stopCommand((key) => claude.cancelTurn(key)))
   registry.register(restartCommand())
 

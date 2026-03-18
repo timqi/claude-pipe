@@ -111,21 +111,25 @@ export function statusCommand(
 
 /**
  * /reload
- * Reloads configuration from disk without restarting.
+ * Reloads configuration and stores from disk without restarting.
  */
 export function reloadCommand(
   config: ClaudePipeConfig,
-  reloadConfig: () => ClaudePipeConfig
+  reloadConfig: () => ClaudePipeConfig,
+  reloadStores?: {
+    cronScheduler?: () => void
+    sessionStore?: () => Promise<void>
+    workspaceStore?: () => Promise<void>
+  }
 ): CommandDefinition {
   return {
     name: 'reload',
     category: 'utility',
-    description: 'Reload configuration from disk',
+    description: 'Reload configuration and stores from disk',
     permission: 'admin',
     async execute(): Promise<CommandResult> {
       try {
         const fresh = reloadConfig()
-        // Mutate the live config object in-place
         Object.assign(config, fresh)
         const parts = [
           'Configuration reloaded.',
@@ -134,6 +138,20 @@ export function reloadCommand(
         if (config.personality?.name) {
           parts.push(`- Personality: ${config.personality.name} — ${config.personality.traits}`)
         }
+
+        if (reloadStores?.workspaceStore) {
+          await reloadStores.workspaceStore()
+          parts.push('- Workspaces reloaded')
+        }
+        if (reloadStores?.sessionStore) {
+          await reloadStores.sessionStore()
+          parts.push('- Sessions reloaded')
+        }
+        if (reloadStores?.cronScheduler) {
+          reloadStores.cronScheduler()
+          parts.push('- Cron jobs reloaded')
+        }
+
         return { content: parts.join('\n') }
       } catch (error) {
         return {
