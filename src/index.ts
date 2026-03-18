@@ -127,6 +127,10 @@ async function main(): Promise<void> {
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)
   agent.setCronCleanup((key) => cronScheduler.clearActive(key))
+  cronScheduler.setChannelVerifier(async (channel, chatId) => {
+    if (channel === 'discord') return channels.verifyDiscordChannel(chatId)
+    return 'ok'
+  })
 
   let shuttingDown = false
   const shutdown = (signal: string): void => {

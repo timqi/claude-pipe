@@ -84,6 +84,11 @@ export class ChannelManager {
     return channel.sendFile(chatId, attachment)
   }
 
+  /** Checks if a Discord channel exists. */
+  async verifyDiscordChannel(chatId: string): Promise<'ok' | 'not_found' | 'error'> {
+    return this.discord.verifyChannel(chatId)
+  }
+
   /** Resolves a Discord channel ID to its name. */
   async getDiscordChannelName(chatId: string): Promise<string | undefined> {
     return this.discord.getChannelName(chatId)

@@ -285,6 +285,21 @@ export class DiscordChannel implements Channel {
     }
   }
 
+  /** Checks if a Discord channel exists. Returns 'ok', 'not_found', or 'error'. */
+  async verifyChannel(chatId: string): Promise<'ok' | 'not_found' | 'error'> {
+    if (!this.client) return 'error'
+    try {
+      await this.client.channels.fetch(chatId)
+      return 'ok'
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status
+      const code = (err as { code?: number }).code
+      // Discord API: 10003 = Unknown Channel, HTTP 404
+      if (status === 404 || code === 10003) return 'not_found'
+      return 'error'
+    }
+  }
+
   /** Resolves a Discord channel ID to its name. Returns undefined for DMs. */
   async getChannelName(chatId: string): Promise<string | undefined> {
     if (!this.client) return undefined

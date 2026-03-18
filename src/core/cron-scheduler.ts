@@ -12,10 +12,16 @@ import type { ChannelName, Logger } from './types.js'
  * Execution is handled by AgentLoop (same serialization, cancellation, etc.).
  * The scheduler only decides *when* to inject.
  */
+export type ChannelStatus = 'ok' | 'not_found' | 'error'
+export type ChannelVerifier = (channel: ChannelName, chatId: string) => Promise<ChannelStatus>
+
+const VERIFY_RETRIES = 3
+
 export class CronScheduler {
   private jobs = new Map<string, Cron>()
   /** Tracks conversation keys with a cron message currently queued or processing. */
   private activeRuns = new Set<string>()
+  private channelVerifier: ChannelVerifier | null = null
 
   constructor(
     private readonly cronStore: CronStore,
@@ -23,6 +29,11 @@ export class CronScheduler {
     private readonly workspaceStore: WorkspaceStore,
     private readonly logger: Logger
   ) {}
+
+  /** Attaches a callback to verify a channel exists before firing. */
+  setChannelVerifier(fn: ChannelVerifier): void {
+    this.channelVerifier = fn
+  }
 
   /** Loads all enabled jobs from store and schedules them. */
   start(): void {
@@ -88,6 +99,27 @@ export class CronScheduler {
     }
     const channel = conversationKey.slice(0, colonIdx) as ChannelName
     const chatId = conversationKey.slice(colonIdx + 1)
+
+    // Verify channel exists before spending API credits
+    if (this.channelVerifier) {
+      let status: ChannelStatus = 'error'
+      for (let attempt = 0; attempt < VERIFY_RETRIES; attempt++) {
+        status = await this.channelVerifier(channel, chatId)
+        if (status !== 'error') break
+      }
+      if (status === 'not_found') {
+        this.logger.warn('cron.channel_not_found', { id, conversationKey })
+        await this.cronStore.update(id, { enabled: false, lastError: 'Channel not found — disabled' })
+        const cronTimer = this.jobs.get(id)
+        if (cronTimer) { cronTimer.stop(); this.jobs.delete(id) }
+        return
+      }
+      if (status === 'error') {
+        this.logger.warn('cron.channel_verify_failed', { id, conversationKey })
+        await this.cronStore.update(id, { lastError: 'Channel verification failed after retries' })
+        return
+      }
+    }
 
     this.activeRuns.add(conversationKey)
     this.logger.info('cron.fired', { id, conversationKey, prompt: prompt.slice(0, 80) })
