@@ -16,7 +16,7 @@ import {
 import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand, registerCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
-import { workspaceCommand } from './definitions/workspace.js'
+
 import { setProjCommand } from './definitions/project.js'
 import { CommandHandler } from './handler.js'
 import { CommandRegistry } from './registry.js'
@@ -65,23 +65,22 @@ export function setupCommands(
 ): { registry: CommandRegistry; handler: CommandHandler } {
   const { config, claude, sessionStore, claudeSessionService, workspaceStore } = deps
   const registry = new CommandRegistry()
-  const getWorkspace = (key: string): string => resolveWorkspace(config, key, workspaceStore)
+  const getWorkspace = (key: string): string => resolveWorkspace(key, workspaceStore) ?? '(not set)'
   const startNewSession = async (key: string): Promise<void> => {
     await sessionStore.clear(key)
     await claude.startNewSession(key)
   }
 
   const getStatus = async (conversationKey: string) => {
-    const currentWorkspace = resolveWorkspace(config, conversationKey, workspaceStore)
+    const currentWorkspace = resolveWorkspace(conversationKey, workspaceStore)
     const currentSessionId = sessionStore.get(conversationKey)?.sessionId
     let sessionInfo = undefined
-    if (currentSessionId) {
+    if (currentSessionId && currentWorkspace) {
       sessionInfo = await claudeSessionService.get(currentWorkspace, currentSessionId) ?? undefined
     }
     return {
       model: config.model,
-      workspace: config.workspace,
-      currentWorkspace,
+      currentWorkspace: currentWorkspace ?? '(not set)',
       channels: [
         ...(config.channels.discord.enabled ? ['discord'] : []),
         ...(config.channels.cli?.enabled ? ['cli'] : [])
@@ -109,7 +108,7 @@ export function setupCommands(
   registry.register(
     claudeAskCommand(async (conversationKey, prompt, channel, chatId) =>
       claude.runTurn(conversationKey, prompt, {
-        workspace: resolveWorkspace(config, conversationKey, workspaceStore),
+        workspace: resolveWorkspace(conversationKey, workspaceStore) ?? '.',
         channel,
         chatId
       })
@@ -130,21 +129,17 @@ export function setupCommands(
   registry.register(
     configGetCommand((key) => {
       if (key) return mutableConfig[key]
-      return { model: config.model, workspace: config.workspace, ...mutableConfig }
+      return { model: config.model, ...mutableConfig }
     })
   )
 
-  // --- Workspace command ---
-  registry.register(workspaceCommand(workspaceStore, config.workspace))
-
   // --- Project command ---
-  registry.register(setProjCommand(config, workspaceStore, sessionStore, startNewSession, getStatus))
+  registry.register(setProjCommand(workspaceStore, sessionStore, startNewSession, getStatus))
 
   // --- Session newchat / delchat ---
   if (deps.createDiscordChannel && deps.sendToDiscordChannel && deps.getDiscordChannelName) {
     registry.register(sessionNewchatCommand(
       workspaceStore,
-      config.workspace,
       deps.createDiscordChannel,
       deps.sendToDiscordChannel,
       deps.getDiscordChannelName
