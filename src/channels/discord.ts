@@ -487,4 +487,14 @@ export class DiscordChannel implements Channel {
     await rest.put(Routes.applicationCommands(applicationId), { body })
     logger.info('channel.discord.slash_commands_registered', { count: body.length })
   }
+
+  /** Registers slash commands using the live bot client's token and application ID. */
+  async registerCommands(commands: CommandMeta[]): Promise<void> {
+    if (!this.client?.application) {
+      throw new Error('Discord client not connected.')
+    }
+    const token = this.config.channels.discord.token
+    const appId = this.client.application.id
+    await DiscordChannel.registerSlashCommands(token, appId, commands, this.logger)
+  }
 }

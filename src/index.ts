@@ -116,7 +116,8 @@ async function main(): Promise<void> {
     createDiscordChannel: (src, name, uid) => channels.createDiscordChannel(src, name, uid),
     sendToDiscordChannel: (chatId, content) => channels.sendToChannel(chatId, content),
     getDiscordChannelName: (chatId) => channels.getDiscordChannelName(chatId),
-    deleteDiscordChannel: (chatId) => channels.deleteDiscordChannel(chatId)
+    deleteDiscordChannel: (chatId) => channels.deleteDiscordChannel(chatId),
+    registerDiscordCommands: (commands) => channels.registerDiscordCommands(commands)
   })
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)

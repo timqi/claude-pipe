@@ -34,7 +34,8 @@ const { registry } = setupCommands({
   createDiscordChannel: noop as never,
   sendToDiscordChannel: async () => {},
   getDiscordChannelName: async () => undefined,
-  deleteDiscordChannel: async () => ({ error: 'not available' })
+  deleteDiscordChannel: async () => ({ error: 'not available' }),
+  registerDiscordCommands: async () => {}
 })
 
 await DiscordChannel.registerSlashCommands(

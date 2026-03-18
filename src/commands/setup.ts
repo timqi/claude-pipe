@@ -13,7 +13,7 @@ import {
   sessionNewchatCommand,
   sessionDelchatCommand
 } from './definitions/session.js'
-import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand } from './definitions/utility.js'
+import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand, registerCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
 import { workspaceCommand } from './definitions/workspace.js'
@@ -39,6 +39,8 @@ export interface CommandDependencies {
   getDiscordChannelName?: (chatId: string) => Promise<string | undefined>
   /** Deletes a Discord channel. Undefined when Discord is not available. */
   deleteDiscordChannel?: (chatId: string) => Promise<{ ok: true } | { error: string }>
+  /** Registers Discord slash commands. Undefined when Discord is not available. */
+  registerDiscordCommands?: (commands: import('./types.js').CommandMeta[]) => Promise<void>
 }
 
 /**
@@ -162,6 +164,11 @@ export function setupCommands(
   // --- Custom commands ---
   for (const cmd of options.customCommands ?? []) {
     registry.register(cmd)
+  }
+
+  // --- Register command (must be before help so it appears in the help list) ---
+  if (deps.registerDiscordCommands) {
+    registry.register(registerCommand(registry, deps.registerDiscordCommands))
   }
 
   // Help must be registered last so it can list all commands including custom ones

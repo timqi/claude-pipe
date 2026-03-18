@@ -1,7 +1,7 @@
 import type { ClaudePipeConfig } from '../../config/schema.js'
 import type { ActiveTurnInfo } from '../../core/model-client.js'
 import type { ClaudeSessionSummary } from '../../core/claude-sessions.js'
-import type { CommandDefinition, CommandResult } from '../types.js'
+import type { CommandDefinition, CommandMeta, CommandResult } from '../types.js'
 import type { CommandRegistry } from '../registry.js'
 
 /**
@@ -179,6 +179,33 @@ export function stopCommand(
     async execute(ctx): Promise<CommandResult> {
       cancelTurn(ctx.conversationKey)
       return { content: 'Stopped.' }
+    }
+  }
+}
+
+/**
+ * /register
+ * Registers Discord slash commands using the live bot client.
+ */
+export function registerCommand(
+  registry: CommandRegistry,
+  registerSlashCommands: (commands: CommandMeta[]) => Promise<void>
+): CommandDefinition {
+  return {
+    name: 'register',
+    category: 'utility',
+    description: 'Register Discord slash commands',
+    permission: 'admin',
+    async execute(): Promise<CommandResult> {
+      try {
+        await registerSlashCommands(registry.toMeta())
+        return { content: `Registered ${registry.toMeta().length} slash commands.` }
+      } catch (error) {
+        return {
+          content: `Registration failed: ${error instanceof Error ? error.message : String(error)}`,
+          error: true
+        }
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+import type { CommandMeta } from '../commands/types.js'
 import type { ClaudePipeConfig } from '../config/schema.js'
 import { MessageBus } from '../core/bus.js'
 import type { FileAttachment, Logger, OutboundMessage, SentMessage } from '../core/types.js'
@@ -100,6 +101,11 @@ export class ChannelManager {
   /** Deletes a Discord channel by ID. */
   async deleteDiscordChannel(chatId: string): Promise<{ ok: true } | { error: string }> {
     return this.discord.deleteChannel(chatId)
+  }
+
+  /** Registers slash commands via the live Discord bot client. */
+  async registerDiscordCommands(commands: CommandMeta[]): Promise<void> {
+    return this.discord.registerCommands(commands)
   }
 
   /** Sends a message to a specific Discord channel by ID. */
