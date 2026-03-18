@@ -43,6 +43,12 @@ export function loadConfig(): ClaudePipeConfig {
     )
   }
 
+  if (!s.allowFrom || s.allowFrom.length === 0) {
+    throw new Error(
+      'allowFrom is empty — all messages would be rejected. Add at least one user ID to settings.json.'
+    )
+  }
+
   const discordEnabled = s.channel === 'discord'
   const cliEnabled = s.channel === 'cli'
 
@@ -55,8 +61,7 @@ export function loadConfig(): ClaudePipeConfig {
       discord: {
         enabled: discordEnabled,
         token: discordEnabled ? s.token : '',
-        allowFrom: discordEnabled ? s.allowFrom : [],
-        allowChannels: discordEnabled ? s.allowChannels : undefined
+        allowFrom: discordEnabled ? s.allowFrom : []
       },
       cli: {
         enabled: cliEnabled,

@@ -6,10 +6,7 @@ const channelSchema = z.object({
   allowFrom: z.array(z.string())
 })
 
-const discordChannelSchema = channelSchema.extend({
-  // Optional allowlist of Discord channel IDs. Empty/omitted means allow all channels.
-  allowChannels: z.array(z.string()).optional()
-})
+const discordChannelSchema = channelSchema
 
 const cliChannelSchema = z.object({
   enabled: z.boolean().default(false),

@@ -14,8 +14,6 @@ export interface Settings {
   channel: 'discord' | 'cli'
   token: string
   allowFrom: string[]
-  // Optional allowlist of Discord channel IDs. Empty/missing means allow all channels.
-  allowChannels?: string[]
   model: string
   workspace: string
   personality?: PersonalitySettings
