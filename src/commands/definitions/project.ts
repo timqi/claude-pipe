@@ -32,10 +32,10 @@ export function setProjCommand(
 ): CommandDefinition {
   return {
     name: 'setproj',
-    category: 'config',
-    description: 'Map this chat to a project directory and start fresh',
-    usage: '/setproj <path> — resolved under $HOME/code/',
-    args: [{ name: 'path', description: 'Project directory path', required: true }],
+    category: 'utility',
+    description: 'Set workspace to ~/code/<path> and start fresh',
+    usage: '/setproj <path> — resolves to ~/code/<path>, creates dir if needed',
+    args: [{ name: 'path', description: 'Path under ~/code/', required: true }],
     permission: 'admin',
     async execute(ctx): Promise<CommandResult> {
       const rawPath = ctx.args.join(' ')
