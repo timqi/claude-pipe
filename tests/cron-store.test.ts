@@ -1,17 +1,22 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { CronStore } from '../src/core/cron-store.js'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import * as fs from 'node:fs'
+import * as crypto from 'node:crypto'
 
 describe('CronStore', () => {
   let store: CronStore
   let storePath: string
 
   beforeEach(async () => {
-    storePath = path.join(os.tmpdir(), `cron-test-${Date.now()}.json`)
+    storePath = path.join(os.tmpdir(), `cron-test-${crypto.randomUUID()}.json`)
     store = new CronStore(storePath)
     await store.init()
+  })
+
+  afterEach(() => {
+    try { fs.unlinkSync(storePath) } catch {}
   })
 
   it('starts empty', () => {
@@ -73,8 +78,5 @@ describe('CronStore', () => {
     await store2.init()
     expect(store2.list()).toHaveLength(1)
     expect(store2.list()[0]!.prompt).toBe('hello')
-
-    // cleanup
-    fs.unlinkSync(storePath)
   })
 })

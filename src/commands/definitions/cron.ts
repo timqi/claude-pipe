@@ -20,7 +20,16 @@ function formatJob(job: CronJob): string {
   const status = job.enabled ? '✅' : '⏸️'
   const lastRun = job.lastRunAt ? ` | last: ${job.lastRunAt.replace('T', ' ').slice(0, 19)}` : ''
   const error = job.lastError ? ` | err: ${job.lastError}` : ''
-  return `${status} \`${job.id.slice(0, 8)}\` \`${job.schedule}\` ${job.prompt.slice(0, 60)}${job.prompt.length > 60 ? '…' : ''}${lastRun}${error}`
+  let next = ''
+  if (job.enabled) {
+    try {
+      const c = new Cron(job.schedule, { legacyMode: true })
+      const nr = c.nextRun()
+      c.stop()
+      if (nr) next = ` | next: ${nr.toISOString().replace('T', ' ').slice(0, 16)}`
+    } catch { /* invalid schedule */ }
+  }
+  return `${status} \`${job.id.slice(0, 8)}\` \`${job.schedule}\` ${job.prompt.slice(0, 60)}${job.prompt.length > 60 ? '…' : ''}${lastRun}${next}${error}`
 }
 
 export function cronAddCommand(

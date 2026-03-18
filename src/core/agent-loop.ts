@@ -64,6 +64,7 @@ export class AgentLoop {
   private readonly lastProgressByConversation = new Map<string, { key: string; at: number }>()
   private commandHandler: CommandHandler | null = null
   private channelManager: ChannelManager | null = null
+  private cronCleanup: ((conversationKey: string) => void) | null = null
 
   constructor(
     private readonly bus: MessageBus,
@@ -81,6 +82,11 @@ export class AgentLoop {
   /** Attaches a channel manager for direct message editing during tool calls. */
   setChannelManager(manager: ChannelManager): void {
     this.channelManager = manager
+  }
+
+  /** Attaches a callback to clear cron active-run flags after a turn completes. */
+  setCronCleanup(fn: (conversationKey: string) => void): void {
+    this.cronCleanup = fn
   }
 
   /** Starts the infinite processing loop. */
@@ -111,6 +117,9 @@ export class AgentLoop {
         // Clean up only if this is still the tracked turn (not replaced by a newer one)
         if (activeTurns.get(key) === turn) {
           activeTurns.delete(key)
+        }
+        if (inbound.metadata?.cronJobId && this.cronCleanup) {
+          this.cronCleanup(key)
         }
       })
       activeTurns.set(key, turn)

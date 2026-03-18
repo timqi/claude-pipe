@@ -126,6 +126,7 @@ async function main(): Promise<void> {
   })
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)
+  agent.setCronCleanup((key) => cronScheduler.clearActive(key))
 
   let shuttingDown = false
   const shutdown = (signal: string): void => {
