@@ -16,7 +16,15 @@ import {
 import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand, registerCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
+import {
+  cronAddCommand,
+  cronListCommand,
+  cronDeleteCommand,
+  cronEnableCommand,
+  cronDisableCommand
+} from './definitions/cron.js'
 
+import type { CronJob } from '../core/cron-store.js'
 import { lsProjCommand } from './definitions/listproj.js'
 import { setProjCommand } from './definitions/project.js'
 import { CommandHandler } from './handler.js'
@@ -42,6 +50,14 @@ export interface CommandDependencies {
   deleteDiscordChannel?: (chatId: string) => Promise<{ ok: true } | { error: string }>
   /** Registers Discord slash commands. Undefined when Discord is not available. */
   registerDiscordCommands?: (commands: import('./types.js').CommandMeta[]) => Promise<void>
+  /** Cron job operations. Undefined when cron is not available. */
+  addCronJob?: (conversationKey: string, schedule: string, prompt: string) => Promise<CronJob>
+  listCronJobs?: (conversationKey: string) => CronJob[]
+  listAllCronJobs?: () => CronJob[]
+  findCronJob?: (idOrPrefix: string) => CronJob | undefined
+  removeCronJob?: (id: string) => Promise<boolean>
+  updateCronJob?: (id: string, patch: Partial<Pick<CronJob, 'enabled'>>) => Promise<boolean>
+  reloadCronScheduler?: () => void
 }
 
 /**
@@ -153,6 +169,15 @@ export function setupCommands(
   }
   if (deps.deleteDiscordChannel) {
     registry.register(sessionDelchatCommand(workspaceStore, sessionStore, deps.deleteDiscordChannel))
+  }
+
+  // --- Cron commands ---
+  if (deps.addCronJob && deps.listCronJobs && deps.listAllCronJobs && deps.findCronJob && deps.removeCronJob && deps.updateCronJob && deps.reloadCronScheduler) {
+    registry.register(cronAddCommand(deps.addCronJob, deps.listCronJobs, deps.reloadCronScheduler))
+    registry.register(cronListCommand(deps.listCronJobs, deps.listAllCronJobs))
+    registry.register(cronDeleteCommand(deps.findCronJob, deps.removeCronJob, deps.reloadCronScheduler))
+    registry.register(cronEnableCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))
+    registry.register(cronDisableCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))
   }
 
   // --- Utility commands ---

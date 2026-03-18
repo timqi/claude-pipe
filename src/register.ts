@@ -35,7 +35,14 @@ const { registry } = setupCommands({
   sendToDiscordChannel: async () => {},
   getDiscordChannelName: async () => undefined,
   deleteDiscordChannel: async () => ({ error: 'not available' }),
-  registerDiscordCommands: async () => {}
+  registerDiscordCommands: async () => {},
+  addCronJob: async () => ({ id: '', conversationKey: '', schedule: '', prompt: '', enabled: false, createdAt: '' }),
+  listCronJobs: () => [],
+  listAllCronJobs: () => [],
+  findCronJob: () => undefined,
+  removeCronJob: async () => false,
+  updateCronJob: async () => false,
+  reloadCronScheduler: () => {}
 })
 
 await DiscordChannel.registerSlashCommands(

@@ -12,6 +12,8 @@ import { createHeartbeat } from './core/heartbeat.js'
 import { logger, setLoggerMuted, setLogLevel } from './core/logger.js'
 import { SessionStore } from './core/session-store.js'
 import { WorkspaceStore } from './core/workspace-store.js'
+import { CronStore } from './core/cron-store.js'
+import { CronScheduler } from './core/cron-scheduler.js'
 import { runOnboarding } from './onboarding/wizard.js'
 
 /** Check if --reconfigure flag was passed */
@@ -87,10 +89,15 @@ async function main(): Promise<void> {
     logger.info('startup.workspace_migrated', { count: Object.keys(legacyWorkspaces).length })
   }
 
+  const cronStore = new CronStore(path.join(configDir, 'cronjobs.json'))
+  await cronStore.init()
+
   logger.warn('startup.config', {
     model: config.model,
     provider: 'claude'
   })
+
+  const cronScheduler = new CronScheduler(cronStore, bus, workspaceStore, logger)
 
   const modelClient = createModelClient(config, sessionStore, logger)
   const agent = new AgentLoop(bus, config, modelClient, logger, workspaceStore)
@@ -108,7 +115,14 @@ async function main(): Promise<void> {
     sendToDiscordChannel: (chatId, content) => channels.sendToChannel(chatId, content),
     getDiscordChannelName: (chatId) => channels.getDiscordChannelName(chatId),
     deleteDiscordChannel: (chatId) => channels.deleteDiscordChannel(chatId),
-    registerDiscordCommands: (commands) => channels.registerDiscordCommands(commands)
+    registerDiscordCommands: (commands) => channels.registerDiscordCommands(commands),
+    addCronJob: (key, schedule, prompt) => cronStore.add(key, schedule, prompt),
+    listCronJobs: (key) => cronStore.listByKey(key),
+    listAllCronJobs: () => cronStore.list(),
+    findCronJob: (id) => cronStore.find(id),
+    removeCronJob: (id) => cronStore.remove(id),
+    updateCronJob: (id, patch) => cronStore.update(id, patch),
+    reloadCronScheduler: () => cronScheduler.reload()
   })
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)
@@ -118,6 +132,7 @@ async function main(): Promise<void> {
     if (shuttingDown) return
     shuttingDown = true
     logger.warn('shutdown.signal', { signal })
+    cronScheduler.stop()
     heartbeat.stop()
     agent.stop()
     // Force exit after 2 s in case channel pollers are slow to stop
@@ -129,6 +144,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => shutdown('SIGTERM'))
 
   await channels.startAll()
+  cronScheduler.start()
   await agent.start()
   heartbeat.start()
 }
