@@ -402,7 +402,8 @@ export class AgentLoop {
         workspace,
         channel: inbound.channel,
         chatId: inbound.chatId,
-        onUpdate: publishProgress
+        onUpdate: publishProgress,
+        skipSessionSave: !!inbound.metadata?.cronJobId
       })
     } finally {
       stopHeartbeat()

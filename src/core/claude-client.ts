@@ -456,7 +456,7 @@ export class ClaudeClient implements ModelClient {
       return 'Sorry, I hit an error while processing that request.'
     }
 
-    if (observedSessionId) {
+    if (observedSessionId && !context.skipSessionSave) {
       await this.store.set(conversationKey, observedSessionId)
     }
 

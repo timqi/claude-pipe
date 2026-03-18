@@ -63,6 +63,8 @@ export interface ToolContext {
   channel: ChannelName
   chatId: string
   onUpdate?: (event: AgentTurnUpdate) => Promise<void> | void
+  /** When true, the session ID is not persisted after the turn (used for cron jobs). */
+  skipSessionSave?: boolean
 }
 
 export type AgentTurnUpdateKind =
