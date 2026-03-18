@@ -24,7 +24,18 @@ if (!config.channels.discord.enabled) {
   process.exit(1)
 }
 
-const { registry } = setupCommands({ config, claude: null!, sessionStore: null!, claudeSessionService: createClaudeSessionService(), workspaceStore: null! })
+const noop = () => Promise.resolve({ error: 'not available' })
+const { registry } = setupCommands({
+  config,
+  claude: null!,
+  sessionStore: null!,
+  claudeSessionService: createClaudeSessionService(),
+  workspaceStore: null!,
+  createDiscordChannel: noop as never,
+  sendToDiscordChannel: async () => {},
+  getDiscordChannelName: async () => undefined,
+  deleteDiscordChannel: async () => ({ error: 'not available' })
+})
 
 await DiscordChannel.registerSlashCommands(
   config.channels.discord.token,

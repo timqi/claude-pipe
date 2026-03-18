@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto'
 
 import type { ClaudeSessionService, ClaudeSessionSummary } from '../../core/claude-sessions.js'
+import type { SessionStore } from '../../core/session-store.js'
 import type { WorkspaceStore } from '../../core/workspace-store.js'
 import type { CommandDefinition, CommandContext, CommandResult } from '../types.js'
 
@@ -218,6 +219,42 @@ export function sessionNewchatCommand(
       await sendToChannel(result.channelId, `Workspace: \`${workspace}\`\nNew session ready.`)
 
       return { content: `Created <#${result.channelId}> → \`${workspace}\`` }
+    }
+  }
+}
+
+/**
+ * /session_delchat
+ * Deletes the current Discord channel and cleans up workspace/session mappings.
+ * Not supported in DMs or CLI.
+ */
+export function sessionDelchatCommand(
+  workspaceStore: WorkspaceStore,
+  sessionStore: SessionStore,
+  deleteChannel: (chatId: string) => Promise<{ ok: true } | { error: string }>
+): CommandDefinition {
+  return {
+    name: 'session_delchat',
+    category: 'session',
+    description: 'Delete the current channel',
+    usage: '/session delchat — deletes this channel and cleans up mappings',
+    permission: 'admin',
+    async execute(ctx: CommandContext): Promise<CommandResult> {
+      if (ctx.channel !== 'discord') {
+        return { content: 'Not supported in CLI mode.' }
+      }
+
+      // Clean up mappings before deleting the channel
+      await workspaceStore.remove(ctx.conversationKey)
+      await sessionStore.clear(ctx.conversationKey)
+
+      const result = await deleteChannel(ctx.chatId)
+      if ('error' in result) {
+        return { content: result.error, error: true }
+      }
+
+      // No response needed — the channel is gone
+      return { content: '' }
     }
   }
 }

@@ -321,6 +321,22 @@ export class DiscordChannel implements Channel {
     }
   }
 
+  /** Deletes a Discord channel by ID. */
+  async deleteChannel(chatId: string): Promise<{ ok: true } | { error: string }> {
+    if (!this.client) return { error: 'Discord client not connected.' }
+    try {
+      const channel = await this.client.channels.fetch(chatId)
+      if (!channel) return { error: 'Channel not found.' }
+      if (!('delete' in channel) || typeof channel.delete !== 'function') {
+        return { error: 'Cannot delete this channel type.' }
+      }
+      await channel.delete()
+      return { ok: true }
+    } catch (error) {
+      return { error: `Failed to delete channel: ${error instanceof Error ? error.message : String(error)}` }
+    }
+  }
+
   private async onMessage(message: Message): Promise<void> {
     if (message.author.bot) return
 

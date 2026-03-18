@@ -97,6 +97,11 @@ export class ChannelManager {
     return this.discord.createPrivateChannel(sourceChatId, channelName, userId)
   }
 
+  /** Deletes a Discord channel by ID. */
+  async deleteDiscordChannel(chatId: string): Promise<{ ok: true } | { error: string }> {
+    return this.discord.deleteChannel(chatId)
+  }
+
   /** Sends a message to a specific Discord channel by ID. */
   async sendToChannel(chatId: string, content: string): Promise<void> {
     await this.discord.send({ channel: 'discord', chatId, content })

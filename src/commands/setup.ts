@@ -10,7 +10,8 @@ import {
   sessionListCommand,
   sessionSelectCommand,
   sessionDeleteCommand,
-  sessionNewchatCommand
+  sessionNewchatCommand,
+  sessionDelchatCommand
 } from './definitions/session.js'
 import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
@@ -36,6 +37,8 @@ export interface CommandDependencies {
   sendToDiscordChannel?: (chatId: string, content: string) => Promise<void>
   /** Resolves a Discord channel ID to its name. Undefined when Discord is not available. */
   getDiscordChannelName?: (chatId: string) => Promise<string | undefined>
+  /** Deletes a Discord channel. Undefined when Discord is not available. */
+  deleteDiscordChannel?: (chatId: string) => Promise<{ ok: true } | { error: string }>
 }
 
 /**
@@ -135,7 +138,7 @@ export function setupCommands(
   // --- Project command ---
   registry.register(setProjCommand(config, workspaceStore, sessionStore, startNewSession, getStatus))
 
-  // --- Session newchat ---
+  // --- Session newchat / delchat ---
   if (deps.createDiscordChannel && deps.sendToDiscordChannel && deps.getDiscordChannelName) {
     registry.register(sessionNewchatCommand(
       workspaceStore,
@@ -144,6 +147,9 @@ export function setupCommands(
       deps.sendToDiscordChannel,
       deps.getDiscordChannelName
     ))
+  }
+  if (deps.deleteDiscordChannel) {
+    registry.register(sessionDelchatCommand(workspaceStore, sessionStore, deps.deleteDiscordChannel))
   }
 
   // --- Utility commands ---
