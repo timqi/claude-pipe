@@ -39,15 +39,26 @@ export function cronAddCommand(
     ],
     permission: 'admin',
     async execute(ctx): Promise<CommandResult> {
+      let schedule: string
+      let prompt: string
+
+      // Try quoted forms first (CLI-friendly)
       const match = ctx.rawArgs.match(/^"([^"]+)"\s+(.+)$/s)
         ?? ctx.rawArgs.match(/^'([^']+)'\s+(.+)$/s)
-        ?? ctx.rawArgs.match(/^(\S+)\s+(.+)$/s)
-      if (!match) {
-        return { content: 'Usage: /cron add "<schedule>" <prompt>', error: true }
+      if (match) {
+        schedule = match[1]!
+        prompt = match[2]!
+      } else {
+        // 5-field cron: first 5 tokens = schedule, rest = prompt
+        const parts = ctx.rawArgs.split(/\s+/)
+        if (parts.length < 6) {
+          return { content: 'Usage: /cron add <5-field schedule> <prompt>\nExample: /cron add */5 * * * * Check server status', error: true }
+        }
+        schedule = parts.slice(0, 5).join(' ')
+        prompt = parts.slice(5).join(' ')
       }
-      const [, schedule, prompt] = match
 
-      const cronErr = validateCron(schedule!)
+      const cronErr = validateCron(schedule)
       if (cronErr) {
         return { content: `Invalid cron expression: ${cronErr}`, error: true }
       }
@@ -57,7 +68,7 @@ export function cronAddCommand(
         return { content: `Limit of ${MAX_JOBS_PER_CHANNEL} cron jobs per channel reached.`, error: true }
       }
 
-      const job = await addJob(ctx.conversationKey, schedule!, prompt!)
+      const job = await addJob(ctx.conversationKey, schedule, prompt)
       reloadScheduler()
       return { content: `Cron job added: \`${job.id.slice(0, 8)}\` \`${job.schedule}\`\n${job.prompt}` }
     }

@@ -48,6 +48,16 @@ describe('cron_add', () => {
     expect(reload).toHaveBeenCalled()
   })
 
+  it('adds a job with unquoted 5-field schedule (Discord style)', async () => {
+    const addJob = vi.fn(async () => makeJob())
+    const cmd = cronAddCommand(addJob, () => [], vi.fn())
+
+    const result = await cmd.execute(makeCtx({ rawArgs: '*/5 * * * * Check server status', args: ['*/5', '*', '*', '*', '*', 'Check', 'server', 'status'] }))
+    expect(result.error).toBeUndefined()
+    expect(result.content).toContain('Cron job added')
+    expect(addJob).toHaveBeenCalledWith('discord:42', '*/5 * * * *', 'Check server status')
+  })
+
   it('rejects invalid cron expression', async () => {
     const cmd = cronAddCommand(vi.fn(), () => [], vi.fn())
     const result = await cmd.execute(makeCtx({ rawArgs: '"bad cron" do stuff', args: [] }))
