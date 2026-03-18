@@ -19,6 +19,7 @@ import { configSetCommand, configGetCommand } from './definitions/config.js'
 import {
   cronAddCommand,
   cronListCommand,
+  cronEditCommand,
   cronDeleteCommand,
   cronEnableCommand,
   cronDisableCommand
@@ -56,7 +57,7 @@ export interface CommandDependencies {
   listAllCronJobs?: () => CronJob[]
   findCronJob?: (idOrPrefix: string) => CronJob | undefined
   removeCronJob?: (id: string) => Promise<boolean>
-  updateCronJob?: (id: string, patch: Partial<Pick<CronJob, 'enabled'>>) => Promise<boolean>
+  updateCronJob?: (id: string, patch: Partial<Pick<CronJob, 'enabled' | 'schedule' | 'prompt'>>) => Promise<boolean>
   reloadCronScheduler?: () => void
 }
 
@@ -175,6 +176,7 @@ export function setupCommands(
   if (deps.addCronJob && deps.listCronJobs && deps.listAllCronJobs && deps.findCronJob && deps.removeCronJob && deps.updateCronJob && deps.reloadCronScheduler) {
     registry.register(cronAddCommand(deps.addCronJob, deps.listCronJobs, deps.reloadCronScheduler))
     registry.register(cronListCommand(deps.listCronJobs, deps.listAllCronJobs, deps.getDiscordChannelName))
+    registry.register(cronEditCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))
     registry.register(cronDeleteCommand(deps.findCronJob, deps.removeCronJob, deps.reloadCronScheduler))
     registry.register(cronEnableCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))
     registry.register(cronDisableCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))

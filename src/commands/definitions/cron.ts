@@ -117,6 +117,76 @@ export function cronListCommand(
   }
 }
 
+export function cronEditCommand(
+  findJob: (idOrPrefix: string) => CronJob | undefined,
+  updateJob: (id: string, patch: Partial<Pick<CronJob, 'schedule' | 'prompt'>>) => Promise<boolean>,
+  reloadScheduler: () => void
+): CommandDefinition {
+  return {
+    name: 'cron_edit',
+    category: 'cron',
+    description: 'Edit a cron job schedule and/or prompt',
+    usage: '/cron edit <id> "<schedule>" [prompt]\nExample: /cron edit abc123 "0 9 * * 1-5" New prompt\nOmit prompt to keep the existing one.',
+    args: [
+      { name: 'id', description: 'Job ID or prefix', required: true },
+      { name: 'schedule', description: 'New cron expression (5-field, quoted)', required: true },
+      { name: 'prompt', description: 'New prompt (optional, keeps existing if omitted)', required: false }
+    ],
+    permission: 'admin',
+    async execute(ctx): Promise<CommandResult> {
+      // Split off the first token (id), then parse the rest like cron_add
+      const firstSpace = ctx.rawArgs.indexOf(' ')
+      if (firstSpace === -1) {
+        return { content: 'Usage: /cron edit <id> "<schedule>" [prompt]', error: true }
+      }
+      const idPrefix = ctx.rawArgs.slice(0, firstSpace)
+      const rest = ctx.rawArgs.slice(firstSpace + 1).trim()
+
+      const job = findJob(idPrefix)
+      if (!job) {
+        return { content: `No job found matching \`${idPrefix}\`.`, error: true }
+      }
+      if (job.conversationKey !== ctx.conversationKey) {
+        return { content: 'That job belongs to a different channel.', error: true }
+      }
+
+      let schedule: string
+      let prompt: string | undefined
+
+      // Try quoted forms first
+      const match = rest.match(/^"([^"]+)"(?:\s+(.+))?$/s)
+        ?? rest.match(/^'([^']+)'(?:\s+(.+))?$/s)
+      if (match) {
+        schedule = match[1]!
+        prompt = match[2]?.trim() || undefined
+      } else {
+        // 5-field cron: first 5 tokens = schedule, rest = prompt (optional)
+        const parts = rest.split(/\s+/)
+        if (parts.length < 5) {
+          return { content: 'Usage: /cron edit <id> <5-field schedule> [prompt]', error: true }
+        }
+        schedule = parts.slice(0, 5).join(' ')
+        prompt = parts.length > 5 ? parts.slice(5).join(' ') : undefined
+      }
+
+      const cronErr = validateCron(schedule)
+      if (cronErr) {
+        return { content: `Invalid cron expression: ${cronErr}`, error: true }
+      }
+
+      const patch: Partial<Pick<CronJob, 'schedule' | 'prompt'>> = { schedule }
+      if (prompt) patch.prompt = prompt
+
+      const ok = await updateJob(job.id, patch)
+      if (!ok) return { content: 'Failed to update job.', error: true }
+      reloadScheduler()
+
+      const updatedPrompt = prompt ?? job.prompt
+      return { content: `Updated cron job \`${job.id.slice(0, 8)}\` → \`${schedule}\`\n${updatedPrompt}` }
+    }
+  }
+}
+
 export function cronDeleteCommand(
   findJob: (idOrPrefix: string) => CronJob | undefined,
   removeJob: (id: string) => Promise<boolean>,

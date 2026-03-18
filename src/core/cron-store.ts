@@ -81,7 +81,7 @@ export class CronStore {
     return true
   }
 
-  async update(id: string, patch: Partial<Pick<CronJob, 'enabled' | 'lastRunAt' | 'lastError'>>): Promise<boolean> {
+  async update(id: string, patch: Partial<Pick<CronJob, 'enabled' | 'lastRunAt' | 'lastError' | 'schedule' | 'prompt'>>): Promise<boolean> {
     const job = this.map[id]
     if (!job) return false
     Object.assign(job, patch)
