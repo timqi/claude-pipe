@@ -64,7 +64,7 @@ export class WorkspaceStore {
   }
 
   private async persist(): Promise<void> {
-    const tmp = `${this.path}.tmp`
+    const tmp = `${this.path}.tmp.${process.pid}.${Date.now()}`
     await writeFile(tmp, JSON.stringify(this.map, null, 2), 'utf-8')
     await rename(tmp, this.path)
   }

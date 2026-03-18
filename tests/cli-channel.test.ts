@@ -10,7 +10,7 @@ function makeConfig(enabled = true) {
     workspace: '/tmp/workspace',
     channels: {
       discord: { enabled: false, token: '', allowFrom: [] },
-      cli: { enabled, allowFrom: [] }
+      cli: { enabled, allowFrom: ['local-user'] }
     },
     summaryPrompt: { enabled: true, template: 'Workspace: {{workspace}} Request: {{request}}' },
     transcriptLog: { enabled: false, path: '/tmp/transcript.jsonl' },

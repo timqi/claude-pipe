@@ -190,7 +190,7 @@ export class ClaudeClient implements ModelClient {
     if (savedSession?.sessionId) {
       args.push('--resume', savedSession.sessionId)
     }
-    args.push(userText)
+    args.push('--', userText)
 
     await this.publishUpdate(context, {
       kind: 'turn_started',
