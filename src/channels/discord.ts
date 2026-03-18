@@ -367,6 +367,11 @@ export class DiscordChannel implements Channel {
       return
     }
 
+    const SKIP_TYPES = ['audio/', 'video/']
+    const attachmentUrls = [...(message.attachments?.values() ?? [])]
+      .filter((a) => !SKIP_TYPES.some((t) => a.contentType?.startsWith(t)))
+      .map((a) => ({ url: a.url, filename: a.name }))
+
     const inbound: InboundMessage = {
       channel: 'discord',
       senderId,
@@ -376,7 +381,8 @@ export class DiscordChannel implements Channel {
       metadata: {
         messageId: message.id,
         guildId: message.guildId ?? undefined
-      }
+      },
+      ...(attachmentUrls.length > 0 ? { attachmentUrls } : {})
     }
 
     await this.bus.publishInbound(inbound)

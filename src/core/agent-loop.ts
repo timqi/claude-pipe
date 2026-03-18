@@ -1,3 +1,6 @@
+import { writeFile, mkdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { CommandHandler } from '../commands/handler.js'
 import type { ChannelManager } from '../channels/manager.js'
 import type { ClaudePipeConfig } from '../config/schema.js'
@@ -7,6 +10,19 @@ import type { ModelClient } from './model-client.js'
 import type { AgentTurnUpdate, ChannelName, FileAttachment, InboundMessage, Logger, SentMessage } from './types.js'
 import { resolveWorkspace } from './workspace.js'
 import type { WorkspaceStore } from './workspace-store.js'
+
+const ATTACHMENT_TMP_DIR = join(tmpdir(), 'claude-pipe-attachments')
+
+/** Downloads a URL to a temp file preserving the original filename. */
+async function downloadAttachment(url: string, filename: string): Promise<string> {
+  await mkdir(ATTACHMENT_TMP_DIR, { recursive: true })
+  const safeName = `${Date.now()}-${filename.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+  const filePath = join(ATTACHMENT_TMP_DIR, safeName)
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to download attachment: ${res.status}`)
+  await writeFile(filePath, Buffer.from(await res.arrayBuffer()))
+  return filePath
+}
 
 /** Truncates a tool detail string to fit in a chat status line. */
 function truncateDetail(value: string, max: number): string {
@@ -164,8 +180,29 @@ export class AgentLoop {
       return
     }
 
+    // Download attachments to temp files and append paths to prompt
+    let contentWithAttachments = inbound.content
+    if (inbound.attachmentUrls?.length) {
+      const paths: string[] = []
+      for (const { url, filename } of inbound.attachmentUrls) {
+        try {
+          paths.push(await downloadAttachment(url, filename))
+        } catch (err) {
+          this.logger.warn('agent.attachment_download_failed', {
+            conversationKey,
+            url,
+            error: err instanceof Error ? err.message : String(err)
+          })
+        }
+      }
+      if (paths.length > 0) {
+        const hint = paths.map((p) => `[Attached file: ${p}]`).join('\n')
+        contentWithAttachments = `${contentWithAttachments}\n\n${hint}`
+      }
+    }
+
     const modelInput = applySummaryTemplate(
-      inbound.content,
+      contentWithAttachments,
       this.config.summaryPrompt,
       workspace
     )

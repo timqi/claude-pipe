@@ -10,6 +10,8 @@ export interface InboundMessage {
   content: string
   timestamp: string
   metadata?: Record<string, unknown>
+  /** Files attached to the message (images, documents, code, etc.). */
+  attachmentUrls?: Array<{ url: string; filename: string }>
 }
 
 /**
