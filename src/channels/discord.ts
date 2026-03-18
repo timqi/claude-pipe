@@ -42,6 +42,8 @@ export class DiscordChannel implements Channel {
   private pendingInteractions = new Map<string, ChatInputCommandInteraction>()
   /** Tracks overflow chunk message IDs per primary message, so editMessage can clean them up. */
   private overflowMessages = new Map<string, string[]>()
+  /** Serializes concurrent editMessage calls per messageId to prevent overflow orphaning. */
+  private editLocks = new Map<string, Promise<void>>()
 
   constructor(
     private readonly config: ClaudePipeConfig,
@@ -196,8 +198,18 @@ export class DiscordChannel implements Channel {
     }
   }
 
-  /** Edits a previously sent Discord message, deleting old overflow and sending new overflow as needed. */
+  /** Edits a previously sent Discord message, serializing per messageId to prevent overflow orphaning. */
   async editMessage(sent: SentMessage, newContent: string): Promise<void> {
+    const key = sent.messageId
+    const prev = this.editLocks.get(key) ?? Promise.resolve()
+    const current = prev.then(() => this.doEditMessage(sent, newContent)).catch(() => {})
+    this.editLocks.set(key, current)
+    await current
+    if (this.editLocks.get(key) === current) this.editLocks.delete(key)
+  }
+
+  /** Internal: performs the actual edit, deleting old overflow and sending new overflow as needed. */
+  private async doEditMessage(sent: SentMessage, newContent: string): Promise<void> {
     if (!this.client || !this.config.channels.discord.enabled) return
 
     const channel = await this.client.channels.fetch(sent.chatId)
