@@ -86,7 +86,8 @@ export function cronAddCommand(
 
 export function cronListCommand(
   listJobs: (conversationKey: string) => CronJob[],
-  listAllJobs: () => CronJob[]
+  listAllJobs: () => CronJob[],
+  getChannelName?: (chatId: string) => Promise<string | undefined>
 ): CommandDefinition {
   return {
     name: 'cron_list',
@@ -102,7 +103,16 @@ export function cronListCommand(
       if (jobs.length === 0) {
         return { content: showAll ? 'No cron jobs.' : 'No cron jobs for this channel.' }
       }
-      return { content: jobs.map(formatJob).join('\n') }
+      const lines = await Promise.all(jobs.map(async (job) => {
+        let prefix = ''
+        if (showAll && getChannelName) {
+          const chatId = job.conversationKey.includes(':') ? job.conversationKey.split(':')[1] : undefined
+          const name = chatId ? await getChannelName(chatId) : undefined
+          prefix = name ? `**#${name}** ` : `\`${job.conversationKey}\` `
+        }
+        return prefix + formatJob(job)
+      }))
+      return { content: lines.join('\n') }
     }
   }
 }

@@ -174,7 +174,7 @@ export function setupCommands(
   // --- Cron commands ---
   if (deps.addCronJob && deps.listCronJobs && deps.listAllCronJobs && deps.findCronJob && deps.removeCronJob && deps.updateCronJob && deps.reloadCronScheduler) {
     registry.register(cronAddCommand(deps.addCronJob, deps.listCronJobs, deps.reloadCronScheduler))
-    registry.register(cronListCommand(deps.listCronJobs, deps.listAllCronJobs))
+    registry.register(cronListCommand(deps.listCronJobs, deps.listAllCronJobs, deps.getDiscordChannelName))
     registry.register(cronDeleteCommand(deps.findCronJob, deps.removeCronJob, deps.reloadCronScheduler))
     registry.register(cronEnableCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))
     registry.register(cronDisableCommand(deps.findCronJob, deps.updateCronJob, deps.reloadCronScheduler))
