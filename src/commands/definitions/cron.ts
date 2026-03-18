@@ -84,11 +84,11 @@ export function cronListCommand(
     category: 'cron',
     description: 'List cron jobs for this channel',
     args: [
-      { name: 'all', description: 'Show all jobs across channels', required: false }
+      { name: 'all', description: 'Show all jobs across channels', required: false, type: 'boolean' }
     ],
     permission: 'user',
     async execute(ctx): Promise<CommandResult> {
-      const showAll = ctx.args[0] === 'all'
+      const showAll = ctx.args[0] === 'true'
       const jobs = showAll ? listAllJobs() : listJobs(ctx.conversationKey)
       if (jobs.length === 0) {
         return { content: showAll ? 'No cron jobs.' : 'No cron jobs for this channel.' }

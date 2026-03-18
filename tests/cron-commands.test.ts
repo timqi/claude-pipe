@@ -102,7 +102,7 @@ describe('cron_list', () => {
     const jobs = [makeJob(), makeJob({ id: 'other123456789012', conversationKey: 'discord:99' })]
     const cmd = cronListCommand(() => [], () => jobs)
 
-    const result = await cmd.execute(makeCtx({ args: ['all'], rawArgs: 'all' }))
+    const result = await cmd.execute(makeCtx({ args: ['true'], rawArgs: 'true' }))
     expect(result.content).toContain('abcdef12')
     expect(result.content).toContain('other123')
   })

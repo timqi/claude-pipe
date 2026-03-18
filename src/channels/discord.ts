@@ -11,7 +11,7 @@ import {
   type Message
 } from 'discord.js'
 
-import type { CommandMeta } from '../commands/types.js'
+import type { CommandArg, CommandMeta } from '../commands/types.js'
 import type { ClaudePipeConfig } from '../config/schema.js'
 import { MessageBus } from '../core/bus.js'
 import { retry } from '../core/retry.js'
@@ -458,10 +458,10 @@ export class DiscordChannel implements Channel {
 
     const body: Array<Record<string, unknown>> = []
 
-    const buildOptions = (args?: Array<{ name: string; description: string; required?: boolean }>) =>
+    const buildOptions = (args?: CommandArg[]) =>
       args?.length
         ? args.map((arg) => ({
-            type: 3, // STRING
+            type: arg.type === 'boolean' ? 5 : 3, // 5 = BOOLEAN, 3 = STRING
             name: arg.name,
             description: arg.description,
             required: arg.required ?? true
