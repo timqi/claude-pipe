@@ -60,7 +60,7 @@ export function loadConfig(): ClaudePipeConfig {
     channels: {
       discord: {
         enabled: discordEnabled,
-        token: discordEnabled ? s.token : '',
+        token: discordEnabled ? (process.env.CLAUDEPIPE_DISCORD_TOKEN || s.token) : '',
         allowFrom: discordEnabled ? s.allowFrom : []
       },
       cli: {
