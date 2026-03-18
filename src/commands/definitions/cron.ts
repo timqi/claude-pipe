@@ -16,9 +16,16 @@ function validateCron(expr: string): string | undefined {
   }
 }
 
+/** Formats a Date or ISO string to local time: "YYYY-MM-DD HH:MM:SS" */
+function toLocal(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
 function formatJob(job: CronJob): string {
   const status = job.enabled ? '✅' : '⏸️'
-  const lastRun = job.lastRunAt ? ` | last: ${job.lastRunAt.replace('T', ' ').slice(0, 19)}` : ''
+  const lastRun = job.lastRunAt ? ` | last: ${toLocal(job.lastRunAt)}` : ''
   const error = job.lastError ? ` | err: ${job.lastError}` : ''
   let next = ''
   if (job.enabled) {
@@ -26,7 +33,7 @@ function formatJob(job: CronJob): string {
       const c = new Cron(job.schedule, { legacyMode: true })
       const nr = c.nextRun()
       c.stop()
-      if (nr) next = ` | next: ${nr.toISOString().replace('T', ' ').slice(0, 16)}`
+      if (nr) next = ` | next: ${toLocal(nr).slice(0, 16)}`
     } catch { /* invalid schedule */ }
   }
   return `${status} \`${job.id.slice(0, 8)}\` \`${job.schedule}\` ${job.prompt.slice(0, 60)}${job.prompt.length > 60 ? '…' : ''}${lastRun}${next}${error}`
