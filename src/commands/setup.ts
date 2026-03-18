@@ -58,6 +58,7 @@ export interface CommandDependencies {
   findCronJob?: (idOrPrefix: string) => CronJob | undefined
   removeCronJob?: (id: string) => Promise<boolean>
   updateCronJob?: (id: string, patch: Partial<Pick<CronJob, 'enabled' | 'schedule' | 'prompt'>>) => Promise<boolean>
+  reloadCronStore?: () => Promise<void>
   reloadCronScheduler?: () => void
 }
 
@@ -186,6 +187,7 @@ export function setupCommands(
   registry.register(statusCommand(getStatus))
   registry.register(pingCommand())
   registry.register(reloadCommand(config, loadConfig, {
+    ...(deps.reloadCronStore ? { cronStore: deps.reloadCronStore } : {}),
     ...(deps.reloadCronScheduler ? { cronScheduler: deps.reloadCronScheduler } : {}),
     sessionStore: () => sessionStore.init(),
     workspaceStore: () => workspaceStore.init(),

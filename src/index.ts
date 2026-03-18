@@ -122,6 +122,7 @@ async function main(): Promise<void> {
     findCronJob: (id) => cronStore.find(id),
     removeCronJob: (id) => cronStore.remove(id),
     updateCronJob: (id, patch) => cronStore.update(id, patch),
+    reloadCronStore: () => cronStore.init(),
     reloadCronScheduler: () => cronScheduler.reload()
   })
   agent.setCommandHandler(handler)

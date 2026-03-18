@@ -117,6 +117,7 @@ export function reloadCommand(
   config: ClaudePipeConfig,
   reloadConfig: () => ClaudePipeConfig,
   reloadStores?: {
+    cronStore?: () => Promise<void>
     cronScheduler?: () => void
     sessionStore?: () => Promise<void>
     workspaceStore?: () => Promise<void>
@@ -146,6 +147,9 @@ export function reloadCommand(
         if (reloadStores?.sessionStore) {
           await reloadStores.sessionStore()
           parts.push('- Sessions reloaded')
+        }
+        if (reloadStores?.cronStore) {
+          await reloadStores.cronStore()
         }
         if (reloadStores?.cronScheduler) {
           reloadStores.cronScheduler()
