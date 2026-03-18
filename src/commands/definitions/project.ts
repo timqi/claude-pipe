@@ -2,12 +2,10 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as os from 'node:os'
 
-import type { ClaudePipeConfig } from '../../config/schema.js'
-import type { ClaudeSessionService, ClaudeSessionSummary } from '../../core/claude-sessions.js'
+import type { ClaudeSessionSummary } from '../../core/claude-sessions.js'
 import type { ActiveTurnInfo } from '../../core/model-client.js'
 import type { SessionStore } from '../../core/session-store.js'
 import type { WorkspaceStore } from '../../core/workspace-store.js'
-import { resolveWorkspace } from '../../core/workspace.js'
 import type { CommandDefinition, CommandResult } from '../types.js'
 
 /**
@@ -17,13 +15,11 @@ import type { CommandDefinition, CommandResult } from '../types.js'
  * If path starts with '/', treated as absolute. Otherwise resolved relative to $HOME.
  */
 export function setProjCommand(
-  config: ClaudePipeConfig,
   workspaceStore: WorkspaceStore,
   sessionStore: SessionStore,
   startNewSession: (conversationKey: string) => Promise<void>,
   getStatus: (conversationKey: string) => Promise<{
     model: string
-    workspace: string
     currentWorkspace: string
     channels: string[]
     sessionInfo: ClaudeSessionSummary | undefined

@@ -23,7 +23,6 @@ describe('loadConfig from settings file', () => {
         token: 'tok_xyz',
         allowFrom: [],
         model: 'GLM-4.7',
-        workspace: '/tmp/ws2'
       }),
       'utf-8'
     )
@@ -33,7 +32,7 @@ describe('loadConfig from settings file', () => {
 
     const parsed = configSchema.parse({
       model: s.model,
-      workspace: s.workspace,
+
       channels: {
         discord: {
           enabled: discordEnabled,
@@ -60,7 +59,6 @@ describe('loadConfig from settings file', () => {
         token: '',
         allowFrom: ['local-user'],
         model: 'gpt-5-codex',
-        workspace: '/tmp/ws-cli'
       }),
       'utf-8'
     )
@@ -71,7 +69,7 @@ describe('loadConfig from settings file', () => {
 
     const parsed = configSchema.parse({
       model: s.model,
-      workspace: s.workspace,
+
       channels: {
         discord: {
           enabled: discordEnabled,

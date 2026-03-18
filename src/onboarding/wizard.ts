@@ -202,7 +202,6 @@ export async function runOnboarding(existingSettings?: Settings): Promise<Settin
     const channel = await chooseChannel(rl, existingChannel)
     const token = await collectCredentials(rl, channel, existingSettings?.token)
     const model = await chooseModel(rl, existingSettings?.model)
-    const workspace = await chooseWorkspace(rl, existingSettings?.workspace)
     const personality = await choosePersonality(rl, existingSettings?.personality)
 
     const settings: Settings = {
@@ -210,7 +209,6 @@ export async function runOnboarding(existingSettings?: Settings): Promise<Settin
       token,
       allowFrom: existingSettings?.allowFrom ?? [],
       model,
-      workspace,
       personality
     }
 

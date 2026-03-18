@@ -5,10 +5,14 @@ import { MessageBus } from '../src/core/bus.js'
 import { CommandHandler, CommandRegistry, sessionClearCommand, stopCommand } from '../src/commands/index.js'
 import type { ClaudePipeConfig } from '../src/config/schema.js'
 
+/** Creates a mock WorkspaceStore that returns '/tmp/workspace' for any key. */
+function makeWorkspaceStore() {
+  return { get: () => '/tmp/workspace' }
+}
+
 function makeConfig(): ClaudePipeConfig {
   return {
     model: 'claude-sonnet-4-5',
-    workspace: '/tmp/workspace',
     channels: {
       discord: { enabled: false, token: '', allowFrom: [] }
     },
@@ -30,7 +34,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
 
     const run = loop.start()
     await bus.publishInbound({
@@ -69,7 +73,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
 
     const registry = new CommandRegistry()
     registry.register(sessionClearCommand(claude.startNewSession))
@@ -119,7 +123,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
     const run = loop.start()
 
     await bus.publishInbound({
@@ -187,7 +191,7 @@ describe('AgentLoop', () => {
       editMessage: vi.fn(async () => undefined)
     }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
     loop.setChannelManager(channelManager as any)
 
     const run = loop.start()
@@ -250,7 +254,7 @@ describe('AgentLoop', () => {
       editMessage: vi.fn(async () => undefined)
     }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
     loop.setChannelManager(channelManager as any)
 
     const run = loop.start()
@@ -318,7 +322,7 @@ describe('AgentLoop', () => {
       editMessage: vi.fn(async () => undefined)
     }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
     loop.setChannelManager(channelManager as any)
 
     const run = loop.start()
@@ -366,7 +370,7 @@ describe('AgentLoop', () => {
       editMessage: vi.fn(async () => undefined)
     }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
     loop.setChannelManager(channelManager as any)
 
     const run = loop.start()
@@ -403,7 +407,7 @@ describe('AgentLoop', () => {
     }
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const loop = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
 
     const registry = new CommandRegistry()
     registry.register(stopCommand(claude.cancelTurn))

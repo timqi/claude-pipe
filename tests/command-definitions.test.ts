@@ -152,7 +152,7 @@ describe('Utility commands', () => {
   it('/help lists all registered commands', async () => {
     const registry = new CommandRegistry()
     registry.register(pingCommand())
-    registry.register(statusCommand(async () => ({ model: 'm', workspace: '/w', currentWorkspace: '/w', channels: [], sessionInfo: undefined, activeTurns: [] })))
+    registry.register(statusCommand(async () => ({ model: 'm', currentWorkspace: '/w', channels: [], sessionInfo: undefined, activeTurns: [] })))
     const cmd = helpCommand(registry)
     registry.register(cmd)
 
@@ -187,7 +187,6 @@ describe('Utility commands', () => {
   it('/status reports runtime info with session and active turns', async () => {
     const cmd = statusCommand(async () => ({
       model: 'claude-sonnet-4-5',
-      workspace: '/tmp/test',
       currentWorkspace: '/tmp/test',
       channels: ['discord'],
       sessionInfo: sampleSession,
@@ -211,7 +210,6 @@ describe('Utility commands', () => {
   it('/status shows no-session and no-turns when idle', async () => {
     const cmd = statusCommand(async () => ({
       model: 'claude-sonnet-4-5',
-      workspace: '/tmp/test',
       currentWorkspace: '/tmp/test',
       channels: ['discord'],
       sessionInfo: undefined,
@@ -288,10 +286,9 @@ describe('Config commands', () => {
   })
 
   it('/config_get shows all config', async () => {
-    const cmd = configGetCommand(() => ({ model: 'test', workspace: '/tmp' }))
+    const cmd = configGetCommand(() => ({ model: 'test' }))
     const result = await cmd.execute(makeCtx())
     expect(result.content).toContain('model')
-    expect(result.content).toContain('workspace')
   })
 
   it('/config_get with key shows specific value', async () => {

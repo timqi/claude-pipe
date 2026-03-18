@@ -15,7 +15,6 @@ export interface Settings {
   token: string
   allowFrom: string[]
   model: string
-  workspace: string
   personality?: PersonalitySettings
   transcriptLog?: {
     enabled?: boolean

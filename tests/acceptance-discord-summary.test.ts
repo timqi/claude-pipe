@@ -5,10 +5,13 @@ import type { ClaudePipeConfig } from '../src/config/schema.js'
 import { AgentLoop } from '../src/core/agent-loop.js'
 import { MessageBus } from '../src/core/bus.js'
 
+function makeWorkspaceStore() {
+  return { get: () => '/Users/mg/workspace' }
+}
+
 function makeConfig(): ClaudePipeConfig {
   return {
     model: 'claude-sonnet-4-5',
-    workspace: '/Users/mg/workspace',
     channels: {
       discord: { enabled: true, token: 'DTKN', allowFrom: ['u1'] }
     },
@@ -30,7 +33,7 @@ describe('acceptance: discord summary flow', () => {
       closeAll: vi.fn()
     }
 
-    const agent = new AgentLoop(bus, makeConfig(), claude as never, logger)
+    const agent = new AgentLoop(bus, makeConfig(), claude as never, logger, makeWorkspaceStore() as never)
     const discord = new DiscordChannel(makeConfig(), bus, logger)
 
     const send = vi.fn(async () => undefined)

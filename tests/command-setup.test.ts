@@ -8,7 +8,6 @@ import type { ClaudePipeConfig } from '../src/config/schema.js'
 function makeDeps(): CommandDependencies {
   const config: ClaudePipeConfig = {
     model: 'claude-sonnet-4-5',
-    workspace: '/tmp/workspace',
     channels: {
       discord: { enabled: true, token: 'dc-token', allowFrom: ['admin1', 'admin2'] }
     },

@@ -56,7 +56,6 @@ export function loadConfig(): ClaudePipeConfig {
 
   return configSchema.parse({
     model: s.model,
-    workspace: s.workspace,
     channels: {
       discord: {
         enabled: discordEnabled,

@@ -1,4 +1,3 @@
-import { existsSync, copyFileSync } from 'node:fs'
 import * as path from 'node:path'
 
 import { ChannelManager } from './channels/manager.js'
@@ -73,13 +72,6 @@ async function main(): Promise<void> {
   }
   const bus = new MessageBus()
 
-  // Migrate session store from legacy {workspace}/data/ to ~/.claude-pipe/
-  const legacySessionPath = path.join(config.workspace, 'data', 'sessions.json')
-  if (!existsSync(config.sessionStorePath) && existsSync(legacySessionPath)) {
-    copyFileSync(legacySessionPath, config.sessionStorePath)
-    logger.info('startup.session_migrated', { from: legacySessionPath, to: config.sessionStorePath })
-  }
-
   const sessionStore = new SessionStore(config.sessionStorePath)
   await sessionStore.init()
 
@@ -96,7 +88,6 @@ async function main(): Promise<void> {
   }
 
   logger.warn('startup.config', {
-    workspace: config.workspace,
     model: config.model,
     provider: 'claude'
   })

@@ -56,7 +56,6 @@ export function helpCommand(registry: CommandRegistry): CommandDefinition {
 export function statusCommand(
   getStatus: (conversationKey: string) => Promise<{
     model: string
-    workspace: string
     currentWorkspace: string
     channels: string[]
     sessionInfo: ClaudeSessionSummary | undefined
@@ -74,7 +73,6 @@ export function statusCommand(
         '**Status:**',
         `• Model: ${status.model}`,
         `• Workspace: ${status.currentWorkspace}`,
-        `• Default workspace: ${status.workspace}`,
         `• Channels: ${status.channels.join(', ')}`
       ]
 
@@ -131,8 +129,7 @@ export function reloadCommand(
         Object.assign(config, fresh)
         const parts = [
           'Configuration reloaded.',
-          `- Model: ${config.model}`,
-          `- Workspace: ${config.workspace}`
+          `- Model: ${config.model}`
         ]
         if (config.personality?.name) {
           parts.push(`- Personality: ${config.personality.name} — ${config.personality.traits}`)

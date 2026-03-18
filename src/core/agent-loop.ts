@@ -154,7 +154,15 @@ export class AgentLoop {
       senderId: inbound.senderId
     })
 
-    const workspace = resolveWorkspace(this.config, conversationKey, this.workspaceStore)
+    const workspace = resolveWorkspace(conversationKey, this.workspaceStore)
+    if (!workspace) {
+      await this.bus.publishOutbound({
+        channel: inbound.channel,
+        chatId: inbound.chatId,
+        content: 'No workspace set for this channel. Use /setproj to set one.'
+      })
+      return
+    }
 
     const modelInput = applySummaryTemplate(
       inbound.content,

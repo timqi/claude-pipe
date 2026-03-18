@@ -26,8 +26,7 @@ describe('settings', () => {
       channel: 'discord' as const,
       token: 'tok_123',
       allowFrom: ['42'],
-      model: 'claude-sonnet-4-5',
-      workspace: '/tmp/ws'
+      model: 'claude-sonnet-4-5'
     }
     writeSettings(data)
     expect(settingsExist()).toBe(true)
@@ -36,7 +35,6 @@ describe('settings', () => {
     expect(loaded.channel).toBe('discord')
     expect(loaded.token).toBe('tok_123')
     expect(loaded.model).toBe('claude-sonnet-4-5')
-    expect(loaded.workspace).toBe('/tmp/ws')
     expect(loaded.allowFrom).toEqual(['42'])
   })
 })

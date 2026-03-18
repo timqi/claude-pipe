@@ -181,7 +181,6 @@ export function sessionDeleteCommand(
  */
 export function sessionNewchatCommand(
   workspaceStore: WorkspaceStore,
-  defaultWorkspace: string,
   createChannel: (sourceChatId: string, channelName: string, userId: string) => Promise<{ channelId: string } | { error: string }>,
   sendToChannel: (chatId: string, content: string) => Promise<void>,
   getChannelName: (chatId: string) => Promise<string | undefined>
@@ -211,7 +210,10 @@ export function sessionNewchatCommand(
       }
 
       // Map new channel to same workspace as current chat
-      const workspace = workspaceStore.get(ctx.conversationKey) ?? defaultWorkspace
+      const workspace = workspaceStore.get(ctx.conversationKey)
+      if (!workspace) {
+        return { content: 'No workspace set for this channel. Use /setproj first.', error: true }
+      }
       const newConversationKey = `discord:${result.channelId}`
       await workspaceStore.set(newConversationKey, workspace)
 
