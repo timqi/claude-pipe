@@ -44,30 +44,47 @@ npm run register <app-id>     # register Discord slash commands (once)
 
 Per-channel workspaces are managed dynamically via the `/setproj` command.
 
+File attachments sent in Discord messages are automatically downloaded and forwarded to Claude.
+
 Secrets (e.g. Discord token) can also be placed in `~/.claude-pipe/.env`.
 
 ## Commands
 
 - `/session` — show, clear, or manage sessions
 - `/session newchat` — create a new Discord channel for the current project
+- `/session delchat` — delete a Discord channel and its mappings
 - `/setproj <path>` — map this chat to `$HOME/code/<path>` and start fresh
+- `/lsproj` — list all workspace mappings
 - `/workspace` — show or change workspace mappings
 - `/model` — show or change model
 - `/status` — show bot status
 - `/config` — show or change runtime config
 - `/reload` — reload settings from disk
+- `/stop` — cancel the current in-progress turn
 - `/help` — list all commands
+
+### Cron jobs
+
+Schedule recurring prompts on a cron schedule (per-channel):
+
+- `/cron add "<schedule>" <prompt>` — create a cron job
+- `/cron list` — list jobs for this channel (`--all` for all channels)
+- `/cron edit <id> "<schedule>" [prompt]` — change schedule and/or prompt
+- `/cron enable <id>` / `/cron disable <id>` — toggle a job
+- `/cron delete <id>` — remove a job
+
+Jobs auto-disable when the target channel is deleted. Cron fire events and turn outputs are logged to `~/.claude-pipe/cronlogs/<project-path>.log`.
 
 ## Architecture
 
 Single Node.js process: event bus, pluggable channels, one agent loop.
 
 ```
-┌─────────┐  ┌─────────┐
-│ Discord │  │   CLI   │
-└────┬────┘  └────┬────┘
-     │            │
-     ▼            ▼
+┌─────────┐  ┌─────────┐  ┌────────────────┐
+│ Discord │  │   CLI   │  │ Cron Scheduler │
+└────┬────┘  └────┬────┘  └───────┬────────┘
+     │            │               │
+     ▼            ▼               ▼
 ┌──────────────────────────────────────┐
 │            Message Bus               │
 │       (inbound / outbound queues)    │
@@ -82,12 +99,12 @@ Single Node.js process: event bus, pluggable channels, one agent loop.
 │  └─────────────┘  └──────┬───────┘  │
 └───────────────────────────┼──────────┘
                             │
-              ┌─────────────┼─────────────┐
-              ▼             ▼             ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Session  │ │Workspace │ │Transcript│
-        │ Store    │ │ Store    │ │ Logger   │
-        └──────────┘ └──────────┘ └──────────┘
+         ┌──────────┬───────┼───────┬──────────┐
+         ▼          ▼       ▼       ▼          ▼
+   ┌──────────┐┌────────┐┌─────┐┌──────────┐┌────────┐
+   │ Session  ││Workspace││Cron ││Transcript││  Cron  │
+   │ Store    ││ Store   ││Store││ Logger   ││  Log   │
+   └──────────┘└────────┘└─────┘└──────────┘└────────┘
 ```
 
 ## Security

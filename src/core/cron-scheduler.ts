@@ -1,6 +1,7 @@
 import { Cron } from 'croner'
 
 import type { CronStore } from './cron-store.js'
+import { logCronEvent } from './cron-log.js'
 import type { MessageBus } from './bus.js'
 import type { WorkspaceStore } from './workspace-store.js'
 import type { ChannelName, Logger } from './types.js'
@@ -80,6 +81,8 @@ export class CronScheduler {
     // Skip if same conversation already has a cron run in-flight
     if (this.activeRuns.has(conversationKey)) {
       this.logger.warn('cron.skipped_active', { id, conversationKey })
+      const ws = this.workspaceStore.get(conversationKey)
+      if (ws) await logCronEvent(ws, id, 'skipped', 'active run in progress')
       return
     }
 
@@ -88,6 +91,7 @@ export class CronScheduler {
     if (!workspace) {
       this.logger.warn('cron.no_workspace', { id, conversationKey })
       await this.cronStore.update(id, { lastError: 'No workspace mapped' })
+      // Can't log to file without a workspace path
       return
     }
 
@@ -110,6 +114,7 @@ export class CronScheduler {
       if (status === 'not_found') {
         this.logger.warn('cron.channel_not_found', { id, conversationKey })
         await this.cronStore.update(id, { enabled: false, lastError: 'Channel not found — disabled' })
+        await logCronEvent(workspace, id, 'error', 'Channel not found — disabled')
         const cronTimer = this.jobs.get(id)
         if (cronTimer) { cronTimer.stop(); this.jobs.delete(id) }
         return
@@ -117,12 +122,14 @@ export class CronScheduler {
       if (status === 'error') {
         this.logger.warn('cron.channel_verify_failed', { id, conversationKey })
         await this.cronStore.update(id, { lastError: 'Channel verification failed after retries' })
+        await logCronEvent(workspace, id, 'error', 'Channel verification failed after retries')
         return
       }
     }
 
     this.activeRuns.add(conversationKey)
     this.logger.info('cron.fired', { id, conversationKey, prompt: prompt.slice(0, 80) })
+    await logCronEvent(workspace, id, 'fired', `"${prompt.slice(0, 80)}"`)
 
     await this.cronStore.update(id, { lastRunAt: new Date().toISOString() })
 

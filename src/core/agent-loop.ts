@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { CommandHandler } from '../commands/handler.js'
 import type { ChannelManager } from '../channels/manager.js'
 import type { ClaudePipeConfig } from '../config/schema.js'
+import { logCronOutput } from './cron-log.js'
 import { applySummaryTemplate } from './prompt-template.js'
 import { MessageBus } from './bus.js'
 import type { ModelClient } from './model-client.js'
@@ -407,6 +408,11 @@ export class AgentLoop {
       })
     } finally {
       stopHeartbeat()
+    }
+
+    // Log cron turn output to file
+    if (inbound.metadata?.cronJobId && rawContent) {
+      await logCronOutput(workspace, inbound.metadata.cronJobId as string, rawContent)
     }
 
     // Turn was cancelled or produced no output — update status and skip publishing
