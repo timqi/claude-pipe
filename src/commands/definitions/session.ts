@@ -196,6 +196,11 @@ export function sessionNewchatCommand(
         return { content: 'Not supported in CLI mode.' }
       }
 
+      const workspace = workspaceStore.get(ctx.conversationKey)
+      if (!workspace) {
+        return { content: 'No workspace set for this channel. Use /setproj first.', error: true }
+      }
+
       const sourceName = await getChannelName(ctx.chatId)
       if (!sourceName) {
         return { content: 'Not supported in DMs.' }
@@ -207,12 +212,6 @@ export function sessionNewchatCommand(
       const result = await createChannel(ctx.chatId, newName, ctx.senderId)
       if ('error' in result) {
         return { content: result.error }
-      }
-
-      // Map new channel to same workspace as current chat
-      const workspace = workspaceStore.get(ctx.conversationKey)
-      if (!workspace) {
-        return { content: 'No workspace set for this channel. Use /setproj first.', error: true }
       }
       const newConversationKey = `discord:${result.channelId}`
       await workspaceStore.set(newConversationKey, workspace)
