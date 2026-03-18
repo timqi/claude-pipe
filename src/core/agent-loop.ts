@@ -199,7 +199,7 @@ export class AgentLoop {
     const publishProgress = async (update: AgentTurnUpdate): Promise<void> => {
       if (update.kind === 'turn_started') {
         if (!this.channelManager) return
-        lastBaseContent = '🤖 Starting Claude...'
+        lastBaseContent = 'starting claude...'
         const statusText = lastBaseContent + statusFooter(inbound.channel, false)
         try {
           const sent = await this.channelManager.sendDirect({
