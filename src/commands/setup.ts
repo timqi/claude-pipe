@@ -9,12 +9,14 @@ import {
   sessionClearCommand,
   sessionListCommand,
   sessionSelectCommand,
-  sessionDeleteCommand
+  sessionDeleteCommand,
+  sessionNewchatCommand
 } from './definitions/session.js'
 import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, restartCommand } from './definitions/utility.js'
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
 import { workspaceCommand } from './definitions/workspace.js'
+import { setProjCommand } from './definitions/project.js'
 import { CommandHandler } from './handler.js'
 import { CommandRegistry } from './registry.js'
 import type { CommandDefinition } from './types.js'
@@ -28,6 +30,12 @@ export interface CommandDependencies {
   sessionStore: SessionStore
   claudeSessionService: ClaudeSessionService
   workspaceStore: WorkspaceStore
+  /** Creates a private Discord channel. Undefined when Discord is not available. */
+  createDiscordChannel?: (sourceChatId: string, channelName: string, userId: string) => Promise<{ channelId: string } | { error: string }>
+  /** Sends a message to a Discord channel. Undefined when Discord is not available. */
+  sendToDiscordChannel?: (chatId: string, content: string) => Promise<void>
+  /** Resolves a Discord channel ID to its name. Undefined when Discord is not available. */
+  getDiscordChannelName?: (chatId: string) => Promise<string | undefined>
 }
 
 /**
@@ -53,6 +61,30 @@ export function setupCommands(
   const { config, claude, sessionStore, claudeSessionService, workspaceStore } = deps
   const registry = new CommandRegistry()
   const getWorkspace = (key: string): string => resolveWorkspace(config, key, workspaceStore)
+  const startNewSession = async (key: string): Promise<void> => {
+    await sessionStore.clear(key)
+    await claude.startNewSession(key)
+  }
+
+  const getStatus = async (conversationKey: string) => {
+    const currentWorkspace = resolveWorkspace(config, conversationKey, workspaceStore)
+    const currentSessionId = sessionStore.get(conversationKey)?.sessionId
+    let sessionInfo = undefined
+    if (currentSessionId) {
+      sessionInfo = await claudeSessionService.get(currentWorkspace, currentSessionId) ?? undefined
+    }
+    return {
+      model: config.model,
+      workspace: config.workspace,
+      currentWorkspace,
+      channels: [
+        ...(config.channels.discord.enabled ? ['discord'] : []),
+        ...(config.channels.cli?.enabled ? ['cli'] : [])
+      ],
+      sessionInfo,
+      activeTurns: claude.getActiveTurns()
+    }
+  }
 
   // --- Session commands ---
   registry.register(sessionClearCommand((key) => claude.startNewSession(key)))
@@ -100,28 +132,22 @@ export function setupCommands(
   // --- Workspace command ---
   registry.register(workspaceCommand(workspaceStore, config.workspace))
 
+  // --- Project command ---
+  registry.register(setProjCommand(config, workspaceStore, sessionStore, startNewSession, getStatus))
+
+  // --- Session newchat ---
+  if (deps.createDiscordChannel && deps.sendToDiscordChannel && deps.getDiscordChannelName) {
+    registry.register(sessionNewchatCommand(
+      workspaceStore,
+      config.workspace,
+      deps.createDiscordChannel,
+      deps.sendToDiscordChannel,
+      deps.getDiscordChannelName
+    ))
+  }
+
   // --- Utility commands ---
-  registry.register(
-    statusCommand(async (conversationKey) => {
-      const currentWorkspace = resolveWorkspace(config, conversationKey, workspaceStore)
-      const currentSessionId = sessionStore.get(conversationKey)?.sessionId
-      let sessionInfo = undefined
-      if (currentSessionId) {
-        sessionInfo = await claudeSessionService.get(currentWorkspace, currentSessionId) ?? undefined
-      }
-      return {
-        model: config.model,
-        workspace: config.workspace,
-        currentWorkspace,
-        channels: [
-          ...(config.channels.discord.enabled ? ['discord'] : []),
-          ...(config.channels.cli?.enabled ? ['cli'] : [])
-        ],
-        sessionInfo,
-        activeTurns: claude.getActiveTurns()
-      }
-    })
-  )
+  registry.register(statusCommand(getStatus))
   registry.register(pingCommand())
   registry.register(reloadCommand(config, loadConfig))
   registry.register(stopCommand((key) => claude.cancelTurn(key)))

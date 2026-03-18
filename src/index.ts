@@ -107,7 +107,16 @@ async function main(): Promise<void> {
   const heartbeat = createHeartbeat(config, bus, logger)
 
   const claudeSessionService = createClaudeSessionService()
-  const { handler } = setupCommands({ config, claude: modelClient, sessionStore, claudeSessionService, workspaceStore })
+  const { handler } = setupCommands({
+    config,
+    claude: modelClient,
+    sessionStore,
+    claudeSessionService,
+    workspaceStore,
+    createDiscordChannel: (src, name, uid) => channels.createDiscordChannel(src, name, uid),
+    sendToDiscordChannel: (chatId, content) => channels.sendToChannel(chatId, content),
+    getDiscordChannelName: (chatId) => channels.getDiscordChannelName(chatId)
+  })
   agent.setCommandHandler(handler)
   agent.setChannelManager(channels)
 

@@ -1,4 +1,7 @@
+import * as crypto from 'node:crypto'
+
 import type { ClaudeSessionService, ClaudeSessionSummary } from '../../core/claude-sessions.js'
+import type { WorkspaceStore } from '../../core/workspace-store.js'
 import type { CommandDefinition, CommandContext, CommandResult } from '../types.js'
 
 function formatSessionInfo(session: ClaudeSessionSummary): string {
@@ -165,6 +168,56 @@ export function sessionDeleteCommand(
       await sessionService.delete(workspace, currentSessionId)
       await clearSession(ctx.conversationKey)
       return { content: `Session \`${currentSessionId.slice(0, 8)}\` deleted.` }
+    }
+  }
+}
+
+/**
+ * /session_newchat
+ * Creates a new private Discord channel mapped to the current project workspace.
+ * Channel name: {current_channel_name}-{4 random hex}.
+ * Not supported in DMs or CLI.
+ */
+export function sessionNewchatCommand(
+  workspaceStore: WorkspaceStore,
+  defaultWorkspace: string,
+  createChannel: (sourceChatId: string, channelName: string, userId: string) => Promise<{ channelId: string } | { error: string }>,
+  sendToChannel: (chatId: string, content: string) => Promise<void>,
+  getChannelName: (chatId: string) => Promise<string | undefined>
+): CommandDefinition {
+  return {
+    name: 'session_newchat',
+    category: 'session',
+    description: 'Create a new private channel for the current project',
+    usage: '/session_newchat — creates a new channel mapped to the current workspace',
+    permission: 'user',
+    async execute(ctx: CommandContext): Promise<CommandResult> {
+      if (ctx.channel !== 'discord') {
+        return { content: 'Not supported in CLI mode.' }
+      }
+
+      const sourceName = await getChannelName(ctx.chatId)
+      if (!sourceName) {
+        return { content: 'Not supported in DMs.' }
+      }
+
+      const suffix = crypto.randomBytes(2).toString('hex')
+      const newName = `${sourceName}-${suffix}`
+
+      const result = await createChannel(ctx.chatId, newName, ctx.senderId)
+      if ('error' in result) {
+        return { content: result.error }
+      }
+
+      // Map new channel to same workspace as current chat
+      const workspace = workspaceStore.get(ctx.conversationKey) ?? defaultWorkspace
+      const newConversationKey = `discord:${result.channelId}`
+      await workspaceStore.set(newConversationKey, workspace)
+
+      // Send intro message in the new channel
+      await sendToChannel(result.channelId, `Workspace: \`${workspace}\`\nNew session ready.`)
+
+      return { content: `Created <#${result.channelId}> → \`${workspace}\`` }
     }
   }
 }

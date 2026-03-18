@@ -83,6 +83,25 @@ export class ChannelManager {
     return channel.sendFile(chatId, attachment)
   }
 
+  /** Resolves a Discord channel ID to its name. */
+  async getDiscordChannelName(chatId: string): Promise<string | undefined> {
+    return this.discord.getChannelName(chatId)
+  }
+
+  /** Creates a private Discord channel. Delegates to the Discord adapter. */
+  async createDiscordChannel(
+    sourceChatId: string,
+    channelName: string,
+    userId: string
+  ): Promise<{ channelId: string } | { error: string }> {
+    return this.discord.createPrivateChannel(sourceChatId, channelName, userId)
+  }
+
+  /** Sends a message to a specific Discord channel by ID. */
+  async sendToChannel(chatId: string, content: string): Promise<void> {
+    await this.discord.send({ channel: 'discord', chatId, content })
+  }
+
   private async dispatchOutbound(): Promise<void> {
     while (this.dispatcherRunning) {
       const msg = await this.bus.consumeOutbound()
@@ -93,7 +112,15 @@ export class ChannelManager {
         continue
       }
 
-      await channel.send(msg)
+      try {
+        await channel.send(msg)
+      } catch (error) {
+        this.logger.error('channel.dispatch_failed', {
+          channel: msg.channel,
+          chatId: msg.chatId,
+          error: error instanceof Error ? error.message : String(error)
+        })
+      }
     }
   }
 }

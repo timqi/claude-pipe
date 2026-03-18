@@ -3,6 +3,7 @@ import {
   Client,
   GatewayIntentBits,
   Partials,
+  PermissionFlagsBits,
   REST,
   Routes,
   type ChatInputCommandInteraction,
@@ -272,20 +273,60 @@ export class DiscordChannel implements Channel {
     }
   }
 
+  /** Resolves a Discord channel ID to its name. Returns undefined for DMs. */
+  async getChannelName(chatId: string): Promise<string | undefined> {
+    if (!this.client) return undefined
+    try {
+      const channel = await this.client.channels.fetch(chatId)
+      if (!channel || !('name' in channel) || typeof channel.name !== 'string') return undefined
+      return channel.name
+    } catch {
+      return undefined
+    }
+  }
+
+  /**
+   * Creates a private text channel in the same guild as the source channel.
+   * Only the invoking user and the bot can see the new channel.
+   */
+  async createPrivateChannel(
+    sourceChatId: string,
+    channelName: string,
+    userId: string
+  ): Promise<{ channelId: string } | { error: string }> {
+    if (!this.client) return { error: 'Discord client not connected.' }
+
+    const sourceChannel = await this.client.channels.fetch(sourceChatId)
+    if (!sourceChannel || !('guild' in sourceChannel) || !sourceChannel.guild) {
+      return { error: 'Not supported in DMs.' }
+    }
+
+    const guild = sourceChannel.guild
+    const botId = this.client.user?.id
+    if (!botId) return { error: 'Bot user not available.' }
+
+    try {
+      const newChannel = await guild.channels.create({
+        name: channelName,
+        type: ChannelType.GuildText,
+        permissionOverwrites: [
+          { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: userId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+          { id: botId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
+        ]
+      })
+      return { channelId: newChannel.id }
+    } catch (error) {
+      return { error: `Failed to create channel: ${error instanceof Error ? error.message : String(error)}` }
+    }
+  }
+
   private async onMessage(message: Message): Promise<void> {
     if (message.author.bot) return
 
     const senderId = message.author.id
     if (!isSenderAllowed(senderId, this.config.channels.discord.allowFrom)) {
       this.logger.warn('channel.discord.denied', { senderId })
-      return
-    }
-
-    if (!this.isChannelAllowed(message.channelId)) {
-      this.logger.warn('channel.discord.denied_channel', {
-        senderId,
-        chatId: message.channelId
-      })
       return
     }
 
@@ -328,15 +369,6 @@ export class DiscordChannel implements Channel {
       return
     }
 
-    if (!this.isChannelAllowed(interaction.channelId)) {
-      this.logger.warn('channel.discord.denied_channel', {
-        senderId,
-        chatId: interaction.channelId
-      })
-      await interaction.reply({ content: 'This channel is not authorised.', ephemeral: true })
-      return
-    }
-
     const subcommand = interaction.options.getSubcommand(false)
     const commandName = subcommand
       ? `/${interaction.commandName}_${subcommand}`
@@ -369,11 +401,6 @@ export class DiscordChannel implements Channel {
     }
 
     await this.bus.publishInbound(inbound)
-  }
-
-  private isChannelAllowed(chatId: string): boolean {
-    const allowChannels = this.config.channels.discord.allowChannels ?? []
-    return allowChannels.length === 0 || allowChannels.includes(chatId)
   }
 
   /**
