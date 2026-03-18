@@ -17,6 +17,7 @@ import { helpCommand, statusCommand, pingCommand, reloadCommand, stopCommand, re
 import { claudeAskCommand, claudeModelCommand } from './definitions/claude.js'
 import { configSetCommand, configGetCommand } from './definitions/config.js'
 
+import { lsProjCommand } from './definitions/listproj.js'
 import { setProjCommand } from './definitions/project.js'
 import { CommandHandler } from './handler.js'
 import { CommandRegistry } from './registry.js'
@@ -135,6 +136,11 @@ export function setupCommands(
 
   // --- Project command ---
   registry.register(setProjCommand(workspaceStore, sessionStore, startNewSession, getStatus))
+
+  // --- List projects ---
+  if (deps.getDiscordChannelName) {
+    registry.register(lsProjCommand(workspaceStore, deps.getDiscordChannelName))
+  }
 
   // --- Session newchat / delchat ---
   if (deps.createDiscordChannel && deps.sendToDiscordChannel && deps.getDiscordChannelName) {
