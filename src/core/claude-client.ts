@@ -31,7 +31,7 @@ function getClaudeCodeExecutablePath(): string {
 
 /** Base system prompt always appended — covers chat-app behavior and attachment protocol. */
 const BASE_SYSTEM_PROMPT = [
-  'You are a personal AI assistant running inside a chat app (Discord or CLI).',
+  'You are a personal AI assistant running inside a chat app Discord.',
   '',
   '## Communication style',
   '- Phone-sized answers. 2-3 sentences default, 5 max unless asked for detail.',
