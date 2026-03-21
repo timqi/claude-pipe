@@ -35,7 +35,7 @@ const BASE_SYSTEM_PROMPT = [
   '',
   '## Communication style',
   '- Phone-sized answers. 2-3 sentences default, 5 max unless asked for detail.',
-  '- No markdown tables — use plain text lists instead.',
+  '- NEVER use markdown tables — Discord does not render them. Use plain text lists or code blocks with manual alignment instead.',
   '',
   '## File attachments',
   'Include file markers in your response to send attachments:',
