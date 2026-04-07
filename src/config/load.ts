@@ -1,4 +1,3 @@
-import { config as loadEnv } from 'dotenv'
 import * as path from 'node:path'
 
 import { getConfigDir, readSettings, settingsExist } from './settings.js'
@@ -6,19 +5,12 @@ import { configSchema, type ClaudePipeConfig } from './schema.js'
 
 /**
  * Loads runtime configuration from `~/.claude-pipe/settings.json`.
- *
- * Environment variables from `~/.claude-pipe/.env` and local `.env` are loaded
- * for secrets (e.g. DISCORD_TOKEN) but all other config comes from settings.json.
  */
 export function loadConfig(): ClaudePipeConfig {
   const defaultSummaryTemplate =
     'Workspace: {{workspace}}\n' +
     'Request: {{request}}\n' +
     'Provide a concise summary with key files and actionable insights.'
-
-  // Load env from ~/.claude-pipe/.env first, then local .env for secrets.
-  loadEnv({ path: path.join(getConfigDir(), '.env') })
-  loadEnv()
 
   if (!settingsExist()) {
     throw new Error(
