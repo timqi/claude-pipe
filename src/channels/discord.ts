@@ -7,6 +7,7 @@ import {
   REST,
   Routes,
   type ChatInputCommandInteraction,
+  Events,
   MessageFlags,
   type Message
 } from 'discord.js'
@@ -69,7 +70,7 @@ export class DiscordChannel implements Channel {
       partials: [Partials.Channel]
     })
 
-    this.client.on('ready', () => {
+    this.client.on(Events.ClientReady, () => {
       this.logger.info('channel.discord.ready', {
         user: this.client?.user?.tag ?? 'unknown'
       })

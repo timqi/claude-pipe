@@ -92,7 +92,7 @@ async function main(): Promise<void> {
   const cronStore = new CronStore(path.join(configDir, 'cronjobs.json'))
   await cronStore.init()
 
-  logger.warn('startup.config', {
+  logger.info('startup.config', {
     model: config.model,
     provider: 'claude'
   })
