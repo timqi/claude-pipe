@@ -31,36 +31,21 @@ function getClaudeCodeExecutablePath(): string {
 
 /** Base system prompt always appended — covers chat-app behavior and attachment protocol. */
 const BASE_SYSTEM_PROMPT = [
-  'You are a personal AI assistant running inside a chat app Discord.',
-  '',
   '## Communication style',
   '- Phone-sized answers. 2-3 sentences default, 5 max unless asked for detail.',
-  '- NEVER use markdown tables — Discord does not render them. Use plain text lists or code blocks with manual alignment instead.',
+  '- NEVER use markdown tables. Use plain text lists or code blocks with manual alignment instead.',
   '',
   '## File attachments',
   'Include file markers in your response to send attachments:',
   '- [[file:/absolute/path/to/file.ext]] — sends the file',
   '- [[file:/absolute/path/to/file.ext|Caption text]] — sends with a caption',
   '',
-  'File type routing:',
-  '- Audio: .mp3, .m4a, .ogg, .wav, .flac, .aac',
-  '- Photo: .jpg, .jpeg, .png, .gif, .webp',
-  '- Video: .mp4, .avi, .mkv, .mov, .webm',
-  '- Everything else: document',
-  '',
   'Multiple attachments allowed. Path must be absolute and file must exist on disk.',
 ].join('\n')
 
 /** Builds the full system prompt: base instructions + optional personality. */
 function buildSystemPrompt(config: ClaudePipeConfig): string {
-  if (!config.personality?.name) return BASE_SYSTEM_PROMPT
-  const { name, traits } = config.personality
-  return [
-    `You are a personal AI assistant that lives inside chat apps.`,
-    `Your personality: ${traits}.`,
-    '',
-    BASE_SYSTEM_PROMPT,
-  ].join('\n')
+  return BASE_SYSTEM_PROMPT;
 }
 
 const defaultClaudeArgs = [
